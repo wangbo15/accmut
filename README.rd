@@ -11,7 +11,8 @@ the Low Level Virtual Machine (LLVM).
  * ../configure --enable-optimized
  * make
 
-Then Accmut is integrated into the C compiler : Clang.
+Then Accmut is integrated into the C compiler Clang, which is located at "build
+/Release+Asserts/bin/clang".
 
 ### Generate the mutation description file.
 Use the new compiler at "build/Release+Asserts/bin/clang" to compile the 
