@@ -1,0 +1,5 @@
+## ignore the build dir ##
+build/
+
+## ignore the build libs ##
+*.[oa]
