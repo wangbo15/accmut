@@ -48,5 +48,7 @@ void loop_test(){
 	}
 }
 int main(){
+    eval_init();
+    other_test(1, 2);
 	return 0;
 }
