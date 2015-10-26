@@ -27,7 +27,6 @@ using namespace llvm;
 using namespace std;
 
 ofstream  MutationGen::ofresult; 
-string MutationGen::mutation_filepath;
 
 //the generating mutation's id 
 int mutation_id = 1;
@@ -44,8 +43,7 @@ MutationGen::MutationGen(Module *M) : FunctionPass(ID) {
 	string home = getenv("HOME");
 	stringstream ss;
 	ss<<home<<"/tmp/accmut/mutations.txt"; 
-	mutation_filepath = ss.str();
-	ofresult.open(mutation_filepath, ios::trunc); // TODO: init just once? 
+	ofresult.open(ss.str(), ios::trunc); // TODO: init just once? 
 	this->TheModule = M;
 }
 
@@ -57,7 +55,7 @@ bool MutationGen::runOnFunction(Function &F) {
 	if(F.getName().equals("main")){
 		return false;
 	}
-	
+	errs()<<"====GENEARTING MUTATION FOR : "<<F.getName()<<" ========\n";
 	genMutationFile(F);
 	return false;
 }

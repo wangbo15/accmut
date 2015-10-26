@@ -47,6 +47,7 @@
 #include "llvm/Transforms/AccMut/MutationGen.h"
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
+#include "llvm/Transforms/AccMut/DMAInstrumenter.h"
 
 using namespace clang;
 using namespace llvm;
@@ -590,8 +591,17 @@ bool EmitAssemblyHelper::AddEmitPasses(BackendAction Action,
   return true;
 }
 
-//add by wb
+//---------- add by wb -----------
+
+#ifdef ACCMUT_GEN_MUT
 MutationGen *mutationGen;
+#endif
+
+#ifdef ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+DMAInstrumenter *dmaInstru;
+#endif
+
+//-----------end-------------------
 
 void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
                                       raw_pwrite_stream *OS) {
@@ -639,8 +649,13 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 	//---------- add by wb -----------
 
 	#ifdef ACCMUT_GEN_MUT
-		mutationGen = new MutationGen(TheModule);
-		PerFunctionPasses->add(mutationGen);
+	//	mutationGen = new MutationGen(TheModule);
+	//	PerFunctionPasses->add(mutationGen);
+	#endif
+
+	#ifdef ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+		dmaInstru = new DMAInstrumenter(TheModule);
+		PerFunctionPasses->add(dmaInstru);
 	#endif
 
 	//-----------end-------------------

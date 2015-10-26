@@ -24,12 +24,11 @@ public:
 	static char ID;// Pass identification, replacement for typeid
 	virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 	virtual bool runOnFunction(Function &F);
-	DMAInstrumenter(Module *M);
-	
-	static vector<Mutation> all_muts;
-	static ifstream fs;
+	DMAInstrumenter(Module *M);	
+	static vector<Mutation*> AllMutsVector;		// TODO: change to SmallVector
 	static void getMutations();
 private:
+	static Mutation * getMutation(string line);
 	Module *TheModule;
 };
 
