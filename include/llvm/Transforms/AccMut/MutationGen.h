@@ -34,7 +34,7 @@ private:
 	static void genCOR();
 	static void genROR(Instruction *inst,StringRef fname, int index);
 	static void genSOR();
-	static void genSTD();
+	static void genSTD(Instruction *inst,StringRef fname, int index);
 	static void genLVR(Instruction *inst, StringRef fname, int index);
 };
 

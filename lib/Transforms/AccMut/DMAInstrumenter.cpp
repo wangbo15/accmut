@@ -43,7 +43,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 	return true;
 }
 
- void DMAInstrumenterL::instrument(Function &F, vector<Mutation*>* v){
+ void DMAInstrumenter::instrument(Function &F, vector<Mutation*>* v){
 	
  }
 

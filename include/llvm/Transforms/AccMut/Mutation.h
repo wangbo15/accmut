@@ -92,7 +92,7 @@ public:
 };
 
 //SOR
-//Shift Operator Replacement, a >> b ---> a << b
+//Shift Operator Replacement, a >> b ---> a << b, is included by LOR
 class SORMut : public Mutation{
 public:
 	SORMut() : Mutation(MK_SOR){}

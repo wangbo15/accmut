@@ -166,6 +166,10 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 	}	
 }
 
+void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
+	// TODO: collect the STD of others 
+}
+
 // for a numeral value T, LVR will generate 4 mut: 0, 1, -1, T+1, T-1 
 void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 	int num = inst->getNumOperands();
