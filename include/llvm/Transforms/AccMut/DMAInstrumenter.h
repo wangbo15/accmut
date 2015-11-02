@@ -15,6 +15,8 @@
 #include "llvm/IR/Module.h"
 
 #include <vector>
+#include <map>
+#include <string>
 
 using namespace llvm;
 using namespace std;
@@ -25,10 +27,12 @@ public:
 	virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 	virtual bool runOnFunction(Function &F);
 	DMAInstrumenter(Module *M);	
-	static vector<Mutation*> AllMutsVector;		// TODO: change to SmallVector
-	static void getMutations();
+	//static vector<Mutation*> AllMutsVector;		// TODO: change to SmallVector
+	static map<string, vector<Mutation*>* > AllMutsMap;
+	static void getAllMutations();
 private:
 	static Mutation * getMutation(string line);
+	static void instrument(Function &F, vector<Mutation*>* v);
 	Module *TheModule;
 };
 

@@ -12,18 +12,19 @@
 #include "llvm/Transforms/AccMut/MutationGen.h"
 
 #include<fstream>
-#include<string>
 #include<sstream>
 
 
 using namespace llvm;
 using namespace std;
 
-vector<Mutation*> DMAInstrumenter::AllMutsVector;
+//vector<Mutation*> DMAInstrumenter::AllMutsVector;
+
+map<string, vector<Mutation*>*> DMAInstrumenter::AllMutsMap;
 
 DMAInstrumenter::DMAInstrumenter(Module *M) : FunctionPass(ID) {
 	this->TheModule = M;
-	getMutations(); 
+	getAllMutations(); 
 }
 
 bool DMAInstrumenter::runOnFunction(Function & F){
@@ -35,27 +36,36 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 		return false;
 	}
 	
+	vector<Mutation*>* v= AllMutsMap[F.getName()];
+
+	instrument(F, v);
 	
 	return true;
 }
 
-void DMAInstrumenter::getMutations(){
-	string buf;
+ void DMAInstrumenterL::instrument(Function &F, vector<Mutation*>* v){
 	
+ }
+
+void DMAInstrumenter::getAllMutations(){
+	string buf;
 	string path = getenv("HOME");
 	path += "/tmp/accmut/mutations.txt";
 	
 	std::ifstream  fin(path, ios::in); 
 	
 	if(!fin.is_open()){
-		errs()<<"FILE ERROR : "<<path<<"\n";
+		errs()<<"FILE ERROR : mutations.txt @ "<<path<<"\n";
 		exit(-1);
 	}
 	
 	while( fin>>buf) { 
-		//errs()<<buf<<"\n";
 		Mutation *m = getMutation(buf);
-		AllMutsVector.push_back(m);
+		//AllMutsVector.push_back(m);
+		if(AllMutsMap.count(m->func) == 0){
+			AllMutsMap[m->func] = new vector<Mutation*>();
+		}
+		AllMutsMap[m->func]->push_back(m);
 	}
 	fin.close();
 }

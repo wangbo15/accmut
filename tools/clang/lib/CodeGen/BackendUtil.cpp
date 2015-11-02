@@ -593,11 +593,11 @@ bool EmitAssemblyHelper::AddEmitPasses(BackendAction Action,
 
 //---------- add by wb -----------
 
-#ifdef ACCMUT_GEN_MUT
+#if ACCMUT_GEN_MUT
 MutationGen *mutationGen;
 #endif
 
-#ifdef ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+#if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
 DMAInstrumenter *dmaInstru;
 #endif
 
@@ -648,12 +648,12 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 
 	//---------- add by wb -----------
 
-	#ifdef ACCMUT_GEN_MUT
-	//	mutationGen = new MutationGen(TheModule);
-	//	PerFunctionPasses->add(mutationGen);
+	#if ACCMUT_GEN_MUT
+		mutationGen = new MutationGen(TheModule);
+		PerFunctionPasses->add(mutationGen);
 	#endif
 
-	#ifdef ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+	#if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
 		dmaInstru = new DMAInstrumenter(TheModule);
 		PerFunctionPasses->add(dmaInstru);
 	#endif
