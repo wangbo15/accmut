@@ -105,6 +105,8 @@ public:
 //Statement Deletion Operator: Delete (omit) a single statement, foo(a,b) ---> <no-op>
 class STDMut : public Mutation{
 public:
+	int op;
+	int func_ty;
 	STDMut() : Mutation(MK_STD){}
 	static bool classof(const Mutation *M) {
 		return M->getKind() == MK_STD;

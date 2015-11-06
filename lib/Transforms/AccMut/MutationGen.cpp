@@ -93,6 +93,9 @@ void MutationGen::genMutationFile(Function & F){
 					genLOR(BI, F.getName(), index);
 					break;
 				}
+				case Instruction::Call:
+					genSTD(BI, F.getName(), index);
+					break;
 				default:{
 					
 				}					
@@ -167,7 +170,33 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 }
 
 void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
-	// TODO: collect the STD of others 
+
+	CallInst *call = cast<CallInst>(inst);
+	
+	Type *t = call->getCalledValue()->getType();
+
+	FunctionType* ft = cast<FunctionType>(cast<PointerType>(t)->getElementType());
+
+	Type *tt = ft->getReturnType();
+	//tt->dump();
+	
+	if(tt->isIntegerTy(32)){
+		//1. if the func returns a int32 val, let it be 0
+		//errs()<<"IT IS A 32 !!\n";
+		std::stringstream ss;
+		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<32<<'\n';
+		mutation_id++;
+		ofresult<<ss.str();
+	}else if(tt->isVoidTy()){
+		//2. if the func returns void, subsitute @llvm.donothing for the func
+		//errs()<<"IT IS A VOID !!\n";
+		std::stringstream ss;
+		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<0<<'\n';
+		mutation_id++;
+		ofresult<<ss.str();
+	}
 }
 
 // for a numeral value T, LVR will generate 4 mut: 0, 1, -1, T+1, T-1 
