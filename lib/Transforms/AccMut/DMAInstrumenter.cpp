@@ -11,6 +11,10 @@
 #include "llvm/Transforms/AccMut/DMAInstrumenter.h"
 #include "llvm/Transforms/AccMut/MutationGen.h"
 
+//#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+
+
 #include<fstream>
 #include<sstream>
 
@@ -33,6 +37,33 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 	}
 	if(F.getName().equals("main")){
 		// TODO: intrument main
+
+		Function* finit = TheModule->getFunction("__accmut__init");
+		if (!finit) {
+
+			std::vector<Type*>Fty_args;
+ 			FunctionType* Fty = FunctionType::get(Type::getVoidTy(TheModule->getContext()),
+													Fty_args,true);
+			finit = Function::Create(
+			 /*Type=*/Fty,
+			 /*Linkage=*/GlobalValue::ExternalLinkage,
+			 /*Name=*/"__accmut__init", TheModule); 
+			finit->setCallingConv(CallingConv::C);
+		}
+
+		//FunctionType *Fty = FunctionType::get(Type::getVoidTy(TheModule->getContext()), NULL, false);
+                                          
+		//Constant* c = TheModule->getOrInsertFunction("__accmut__init",Fty);
+		//Function* finit =  cast<Function>(c);
+		
+		CallInst* call_init = CallInst::Create(finit, "", F.getEntryBlock().begin());
+		call_init->setCallingConv(CallingConv::C);
+		call_init->setTailCall(false);
+		AttributeSet call_init_PAL;
+		call_init->setAttributes(call_init_PAL);
+
+
+		
 		return false;
 	}
 	
