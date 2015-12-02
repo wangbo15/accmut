@@ -32,7 +32,9 @@ public:
 	static void getAllMutations();
 private:
 	static Mutation * getMutation(string line);
-	static void instrument(Function &F, vector<Mutation*>* v);
+	void filtMutsByIndex(Function &F, vector<Mutation*>* v);
+	int instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts);
+	BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
 	Module *TheModule;
 };
 

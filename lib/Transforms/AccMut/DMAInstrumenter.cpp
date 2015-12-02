@@ -11,9 +11,10 @@
 #include "llvm/Transforms/AccMut/DMAInstrumenter.h"
 #include "llvm/Transforms/AccMut/MutationGen.h"
 
-//#include "llvm/IR/Function.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
-
+#include "llvm/IR/Constants.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 #include<fstream>
 #include<sstream>
@@ -37,46 +38,165 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 	}
 	if(F.getName().equals("main")){
 		// TODO: intrument main
-
+/*
 		Function* finit = TheModule->getFunction("__accmut__init");
 		if (!finit) {
-
 			std::vector<Type*>Fty_args;
  			FunctionType* Fty = FunctionType::get(Type::getVoidTy(TheModule->getContext()),
 													Fty_args,true);
 			finit = Function::Create(
-			 /*Type=*/Fty,
-			 /*Linkage=*/GlobalValue::ExternalLinkage,
-			 /*Name=*/"__accmut__init", TheModule); 
+			 	Fty,	//Type
+				 GlobalValue::ExternalLinkage,	//Linkage
+				 "__accmut__init",	//Name
+				 TheModule); 
 			finit->setCallingConv(CallingConv::C);
 		}
 
-		//FunctionType *Fty = FunctionType::get(Type::getVoidTy(TheModule->getContext()), NULL, false);
-                                          
-		//Constant* c = TheModule->getOrInsertFunction("__accmut__init",Fty);
-		//Function* finit =  cast<Function>(c);
-		
 		CallInst* call_init = CallInst::Create(finit, "", F.getEntryBlock().begin());
 		call_init->setCallingConv(CallingConv::C);
 		call_init->setTailCall(false);
 		AttributeSet call_init_PAL;
 		call_init->setAttributes(call_init_PAL);
-
-
-		
+		*/
 		return false;
 	}
 	
 	vector<Mutation*>* v= AllMutsMap[F.getName()];
-
-	instrument(F, v);
+	
+	if(v != NULL && v->size() != 0)
+		filtMutsByIndex(F, v);
 	
 	return true;
 }
 
- void DMAInstrumenter::instrument(Function &F, vector<Mutation*>* v){
+void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
+	errs()<<"===  DMA INSTRUMENTING "<<F.getName()<<"  =====\n";
+	Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");
+
+	if(!f_process_i32){
+		std::vector<Type*>Fty_args;
+		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+ 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+ 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+ 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+		FunctionType* Fty = FunctionType::get(Type::getInt32Ty(TheModule->getContext()), Fty_args, true);
+
+		f_process_i32 = Function::Create(
+			 	 Fty,	//Type
+				 GlobalValue::ExternalLinkage,	//Linkage
+				 "__accmut__process_i32",	//Name
+				 TheModule); 
+		f_process_i32->setCallingConv(CallingConv::C);
+	}
+
+	Function *f_process_st = TheModule->getFunction("__accmut__process_st");
+	if(!f_process_st){
+		std::vector<Type*>Fty_args;
+		
+	}
 	
- }
+		
+	std::vector<Mutation*>::iterator cur_mut = v->begin();
+	std::vector<Mutation*>::iterator beg = cur_mut;
+
+	int instrumented_insts = 0;
+
+	while(cur_mut != v->end()){
+		if((*cur_mut)->index != (*beg)->index){
+			errs()<<"IR "<<(*beg)->index<<" : mut "<<(*beg)->id<<" ~~ mut "<<(*(cur_mut-1))->id<<"\n";
+						errs()<<" II : "<<instrumented_insts<<"\n";
+
+			int insts = instrument(F, (*beg)->index, (*beg)->id, (*(cur_mut-1))->id, instrumented_insts);
+			instrumented_insts+=insts;
+
+			errs()<<" III : "<<instrumented_insts<<"\n";
+
+			beg = cur_mut;
+			continue;
+		}
+		if(cur_mut == (v->end() -1)){
+			errs()<<(*beg)->index<<" : "<<(*beg)->id<<"~"<<(*cur_mut)->id<<"\n";
+						errs()<<" II : "<<instrumented_insts<<"\n";
+
+			int insts = instrument(F, (*beg)->index, (*beg)->id, (*cur_mut)->id, instrumented_insts);
+			instrumented_insts+=insts;
+			errs()<<" III : "<<instrumented_insts<<"\n";
+		}
+		cur_mut++;
+	}
+
+//	cur_it = getLocation();
+
+}
+
+int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts){
+	int insts = 0;
+	
+	BasicBlock::iterator cur_it = getLocation(F, instrumented_insts, index);
+	Function::iterator cur_bb = cur_it->getParent();
+
+	errs()<<" 	instrumenting this IR >>>> ";
+	cur_it->dump();
+
+	if(cur_it->getOpcode() >= 14 && cur_it->getOpcode() <= 31){ // FOR ARITH INST
+		Type* ori_ty = cur_it->getType();
+		if(ori_ty->isIntegerTy(32)){
+			Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");			
+			std::vector<Value*> int32_call_params;
+			std::stringstream ss;
+			ss<<mut_from;
+			ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
+			int32_call_params.push_back(from_i32);
+			ss.str("");
+			ss<<mut_to;
+			ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
+			int32_call_params.push_back(to_i32);
+			int32_call_params.push_back(cur_it->getOperand(0));
+			int32_call_params.push_back(cur_it->getOperand(1));
+			CallInst *call = CallInst::Create(f_process_i32, int32_call_params);
+			ReplaceInstWithInst(cur_it, call);
+		}
+
+		
+	}
+	else if(cur_it->getOpcode() == 52){// FOR ICMP INST
+		Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");			
+		std::vector<Value*> int32_call_params;
+		std::stringstream ss;
+		ss<<mut_from;
+		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
+		int32_call_params.push_back(from_i32);
+		ss.str("");
+		ss<<mut_to;
+		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
+		int32_call_params.push_back(to_i32);
+		int32_call_params.push_back(cur_it->getOperand(0));
+		int32_call_params.push_back(cur_it->getOperand(1));
+		CallInst *call = CallInst::Create(f_process_i32, int32_call_params, "call_process_i32", cur_it);
+		
+		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "i32_to_bool");
+		insts++;
+		
+		ReplaceInstWithInst(cur_it, i32_conv);				
+	}
+	else if(cur_it->getOpcode() == 34){// FOR STORE INST
+		
+	}
+	return insts;
+}
+
+BasicBlock::iterator DMAInstrumenter::getLocation(Function &F, int instrumented_insts, int index){
+	int cur = 0;
+	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
+		BasicBlock *BB = FI;
+		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, cur++){
+			if(index + instrumented_insts == cur ){
+				return BI;
+			}
+		}
+	}
+	return F.back().end();	
+}
 
 void DMAInstrumenter::getAllMutations(){
 	string buf;
@@ -151,15 +271,25 @@ Mutation *DMAInstrumenter::getMutation(string line){
 	}else if(mtype == "SOR"){
 		
 	}else if(mtype == "STD"){
-
+		STDMut *std = new STDMut();
+		int op, type;
+		ss>>op;
+		ss>>colon;
+		ss>>type;
+		std->op = op;
+		std->func_ty = type;
+		m = dyn_cast<Mutation>(std);
 	}else if(mtype == "LVR"){
 		LVRMut *lvr = new LVRMut();
-		int oi, sc, tc;
+		int op, oi, sc, tc;
+		ss>>op;
+		ss>>colon;		
 		ss>>oi;
 		ss>>colon;
 		ss>>sc;
 		ss>>colon;
 		ss>>tc;
+		lvr->op = op;
 		lvr->oper_index = oi;
 		lvr->src_const = sc;
 		lvr->tar_const = tc;

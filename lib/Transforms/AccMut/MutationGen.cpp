@@ -66,9 +66,14 @@ void MutationGen::genMutationFile(Function & F){
 		BasicBlock *BB = FI;
 		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, index++){
 
+			unsigned opc = BI->getOpcode();
+
+			if(opc == 32){// omit ALLOCA		// (opc >=32 && opc <= 38)
+				continue;
+			}
+			
 			genLVR(BI, F.getName(), index);
 			
-			unsigned opc = BI->getOpcode();
 			switch(opc){
 				case Instruction::Add:
 				case Instruction::Sub:
@@ -204,103 +209,106 @@ void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 	int num = inst->getNumOperands();
 	for(int i; i < num; i++){
 		if (const ConstantInt *CI = dyn_cast<ConstantInt>(inst->getOperand(i))){
+
+				//CI->dump();
+			
 				std::stringstream ss;
 				if(CI->isZero()){
 					// TODO: how to confirm the int is signed or unsigned 
 					// 0 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<0<<":"<<1<<'\n';
 					mutation_id ++;
 					// 0 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<0<<":"<<-1<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();
 				}else if(CI->isOne()){
 					// 1 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<1<<":"<<0<<'\n';
 					mutation_id ++;	
 					// 1 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<1<<":"<<-1<<'\n';
 					mutation_id ++;					
 					// 1 -> 2
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<1<<":"<<2<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();		
 				}else if(CI->isMinusOne()){
 					// -1 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-1<<":"<<0<<'\n';
 					mutation_id ++;		
 					// -1 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-1<<":"<<1<<'\n';
 					mutation_id ++;						
 					// -1 -> -2
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-1<<":"<<-2<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();		
 				}else if(CI->equalsInt((unsigned) -2)){
 					// -2 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<0<<'\n';
 					mutation_id ++;							
 					// -2 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<1<<'\n';
 					mutation_id ++;				
 					// -2 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<-1<<'\n';
 					mutation_id ++;		
 					// -2 -> -3
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<-3<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();						
 				}else if(CI->equalsInt(2)){
 					// 2 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<0<<'\n';
 					mutation_id ++;							
 					// 2 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<1<<'\n';
 					mutation_id ++;						
 					// 2 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<-1<<'\n';
 					mutation_id ++;						
 					// 2 -> 3
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<3<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();						
 				}else{
 				// T -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<0<<'\n';
 					mutation_id ++;;					
 				// T -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<1<<'\n';
 					mutation_id ++;					
 				// T -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<-1<<'\n';
 					mutation_id ++;				
 				// T -> T+1
 					int bigger = (int)*(CI->getValue().getRawData()) + 1;
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<bigger<<'\n';
 					mutation_id ++;					
 				// T -> T-1
 					int smaller = (int)*(CI->getValue().getRawData()) -1;
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"
+					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<smaller<<'\n';
 					mutation_id ++;
 					ofresult<<ss.str();	

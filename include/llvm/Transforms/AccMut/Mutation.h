@@ -116,6 +116,7 @@ public:
 //Literal Value Replacement : 0 ---> 1
 class LVRMut : public Mutation{
 public:
+	int op;
 	int oper_index;
 	int src_const;
 	int tar_const;
