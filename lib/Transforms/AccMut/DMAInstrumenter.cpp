@@ -92,7 +92,18 @@ void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 	Function *f_process_st = TheModule->getFunction("__accmut__process_st");
 	if(!f_process_st){
 		std::vector<Type*>Fty_args;
-		
+		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+		PointerType* PointerTy_1 = PointerType::get(IntegerType::get(TheModule->getContext(), 32), 0);
+
+		Fty_args.push_back(PointerTy_1);
+		FunctionType* FuncTy = FunctionType::get(
+									Type::getVoidTy(TheModule->getContext()),
+									Fty_args,
+									false);	
+		f_process_st = Function::Create(FuncTy,GlobalValue::ExternalLinkage,
+				"__accmut__process_st", TheModule); 
+		f_process_st->setCallingConv(CallingConv::C);		
 	}
 	
 		
@@ -180,7 +191,21 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		ReplaceInstWithInst(cur_it, i32_conv);				
 	}
 	else if(cur_it->getOpcode() == 34){// FOR STORE INST
+		Function *f_process_st = TheModule->getFunction("__accmut__process_st");
+		std::vector<Value*> params;
+		std::stringstream ss;
+		ss<<mut_from;
+		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
+		params.push_back(from_i32);
+		ss.str("");
+		ss<<mut_to;
+		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
+		params.push_back(to_i32);	
 		
+		params.push_back(cur_it->getOperand(1));	
+		
+		CallInst *call = CallInst::Create(f_process_st, params);		
+		ReplaceInstWithInst(cur_it, call);
 	}
 	return insts;
 }
