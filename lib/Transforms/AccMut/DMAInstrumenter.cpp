@@ -175,15 +175,18 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		std::vector<Value*> int32_call_params;
 		std::stringstream ss;
 		ss<<mut_from;
-		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
+		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), 
+				APInt(32, StringRef(ss.str()), 10)); 
 		int32_call_params.push_back(from_i32);
 		ss.str("");
 		ss<<mut_to;
-		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
+		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(),
+			APInt(32, StringRef(ss.str()), 10));
 		int32_call_params.push_back(to_i32);
 		int32_call_params.push_back(cur_it->getOperand(0));
 		int32_call_params.push_back(cur_it->getOperand(1));
-		CallInst *call = CallInst::Create(f_process_i32, int32_call_params, "call_process_i32", cur_it);
+		CallInst *call = CallInst::Create(f_process_i32, int32_call_params, 
+				"call_process_i32", cur_it);
 		
 		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "i32_to_bool");
 		insts++;
@@ -207,6 +210,33 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		CallInst *call = CallInst::Create(f_process_st, params);		
 		ReplaceInstWithInst(cur_it, call);
 	}
+	else if(cur_it->getOpcode() == 55){// FOR CALL INST
+		CallInst* call = cast<CallInst>(cur_it);
+		Type* ori_ty = cur_it->getType();
+		if(ori_ty->isIntegerTy(32)){
+			Function *f = TheModule->getFunction("__accmut__process_call_i32");	
+
+			CallInst* call = CallInst::Create(f, "");
+			call->setCallingConv(CallingConv::C);
+			call->setTailCall(false);
+			AttributeSet attr;
+			call->setAttributes(attr);		
+
+			ReplaceInstWithInst(cur_it, call);
+		}else if(ori_ty->isVoidTy()){
+			Function *f = TheModule->getFunction("__accmut__process_call_void");
+
+
+			CallInst* call = CallInst::Create(f, "");
+			call->setCallingConv(CallingConv::C);
+			call->setTailCall(false);
+			AttributeSet attr;
+			call->setAttributes(attr);
+
+			ReplaceInstWithInst(cur_it, call);		
+		}	
+	}
+	
 	return insts;
 }
 
