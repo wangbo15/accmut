@@ -152,7 +152,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 	if(cur_it->getOpcode() >= 14 && cur_it->getOpcode() <= 31){ // FOR ARITH INST
 		Type* ori_ty = cur_it->getType();
 		if(ori_ty->isIntegerTy(32)){
-			Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");			
+			Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");// TODO:: int or unsigned ??!!
 			std::vector<Value*> int32_call_params;
 			std::stringstream ss;
 			ss<<mut_from;
@@ -186,9 +186,9 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		int32_call_params.push_back(cur_it->getOperand(0));
 		int32_call_params.push_back(cur_it->getOperand(1));
 		CallInst *call = CallInst::Create(f_process_i32, int32_call_params, 
-				"call_process_i32", cur_it);
+				"", cur_it);
 		
-		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "i32_to_bool");
+		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "");
 		insts++;
 		
 		ReplaceInstWithInst(cur_it, i32_conv);				

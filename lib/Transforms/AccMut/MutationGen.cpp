@@ -68,7 +68,7 @@ void MutationGen::genMutationFile(Function & F){
 
 			unsigned opc = BI->getOpcode();
 
-			if(opc == 32){// omit ALLOCA		// (opc >=32 && opc <= 38)
+			if(opc == 32){// omit ALLOCA		
 				continue;
 			}
 			
@@ -101,6 +101,7 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::Call:
 					genSTD(BI, F.getName(), index);
 					break;
+				// TODO: genSTD for store
 				default:{
 					
 				}					
