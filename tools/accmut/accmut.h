@@ -1,3 +1,6 @@
+#ifndef ACCMUT_H
+#define ACCMUT_H
+
 #include<stdlib.h>
 #include<string.h>
 #include<stdio.h>
@@ -86,12 +89,20 @@ void __accmut__init(){
 	}
 }
 
-int __accmut__statechanged(){
+int __accmut__state_changed(){
 	
 	return 0;
 }
 
-int __accmut__cal_arith(int op, int a, int b){// TODO:: add float point
+int __accmut__process_call_i32(){
+    return 0;
+}
+
+void __accmut__process_call_void(){
+
+}
+
+int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 	switch(op){
 		case 14: return a + b;
 		case 16: return a - b;
@@ -107,10 +118,32 @@ int __accmut__cal_arith(int op, int a, int b){// TODO:: add float point
 		case 30: return a | b;
 		case 31: return a ^ b;
 		default:
-			printf("ERROR : __accmut__arith_cal !!!\n");
+			printf("ERROR : __accmut__cal_i32_arith !!!\n");
 			exit(0);
 	}
 }
+
+long __accmut__cal_i64_arith(int op, long a, long b){// TODO:: add float point
+	switch(op){
+		case 14: return a + b;
+		case 16: return a - b;
+		case 18: return a * b;
+		case 20: return ((unsigned long)a) / ((unsigned long)b);
+		case 21: return a / b;
+		case 23: return ((unsigned long)a) % ((unsigned long)b);
+		case 24: return a % b;
+		case 26: return a << b;
+		case 27: return ((unsigned long)a) >> ((unsigned long)b);
+		case 28: return a >> b;
+		case 29: return a & b;
+		case 30: return a | b;
+		case 31: return a ^ b;
+		default:
+			printf("ERROR : __accmut__cal_i64_arith !!!\n");
+			exit(0);
+	}
+}
+
 
 int __accmut__fork(int mutid){
 	pid_t pid = 0;
@@ -129,12 +162,12 @@ int __accmut__fork(int mutid){
 }
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){
-	int ori = __accmut__cal_arith(m->op , left, right);
+	int ori = __accmut__cal_i32_arith(ALLMUTS[from]->op , left, right);
 	printf("ORIG RESULT : %d", ori);
 	int i;
 	for(i = from; i <= to; i++){// to + 1 or to ?
 		Mutation *m = ALLMUTS[i];
-		int mut_res = __accmut__cal_arith(m->t_op, left, right);
+		int mut_res = __accmut__cal_i32_arith(m->t_op, left, right);
 		if(ori != mut_res){
 			pid_t pid = __accmut__fork(i);
 			if(pid > 0){
@@ -145,7 +178,25 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 	return ori;
 }
 
-int __accmut__cal_bool(int pre, int a, int b){
+long __accmut__process_i64_arith(int from, int to, long left, long right){
+	long ori = __accmut__cal_i64_arith(ALLMUTS[from]->op , left, right);
+	printf("ORIG RESULT : %l", ori);
+	int i;
+	for(i = from; i <= to; i++){// to + 1 or to ?
+		Mutation *m = ALLMUTS[i];
+		long mut_res = __accmut__cal_i64_arith(m->t_op, left, right);
+		if(ori != mut_res){
+			pid_t pid = __accmut__fork(i);
+			if(pid > 0){
+				return mut_res;
+			}
+		}
+	}	
+	return ori;
+}
+
+
+int __accmut__cal_i32_bool(int pre, int a, int b){
 	switch(pre){
 		case 32: return a == b;
 		case 33: return a != b;
@@ -158,18 +209,52 @@ int __accmut__cal_bool(int pre, int a, int b){
 		case 40: return a < b;
 		case 41: return a <= b;
 		default:
-			printf("ERROR : __accmut_cal_bool !!!\n");
+			printf("ERROR : __accmut_cal_i32_bool !!!\n");
+			exit(0);
+	}
+}
+
+int __accmut__cal_i64_bool(int pre, long a, long b){
+	switch(pre){
+		case 32: return a == b;
+		case 33: return a != b;
+		case 34: return ((unsigned long) a) > ((unsigned long) b);
+		case 35: return ((unsigned long) a) >= ((unsigned long) b);
+		case 36: return ((unsigned long) a) < ((unsigned long) b);
+		case 37: return ((unsigned long) a) <= ((unsigned long) b);
+		case 38: return a > b;
+		case 39: return a >= b;
+		case 40: return a < b;
+		case 41: return a <= b;
+		default:
+			printf("ERROR : __accmut__cal_i64_bool !!!\n");
 			exit(0);
 	}
 }
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
-	int ori = __accmut__cal_bool(m->s_pre, left, right);
-	printf("ORIG RESULT : %d", ori)
+	int ori = __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right);
+	//printf("ORIG RESULT : %d", ori)
 	int i;
 	for(i = from; i <= to; i++){
 		Mutation *m = ALLMUTS[i];
-		int mut_res = __accmut__cal_bool(m->t_pre, left, right);
+		int mut_res = __accmut__cal_i32_bool(m->t_pre, left, right);
+		if(ori != mut_res){
+			pid_t pid =	__accmut__fork(i);	
+			if(pid > 0){
+				return mut_res;
+			}
+		}
+	}
+	return ori;
+}
+
+int __accmut__process_i64_cmp(int from, int to, long left, long right){
+	long ori = __accmut__cal_i64_bool(ALLMUTS[from]->s_pre, left, right);
+	int i;
+	for(i = from; i <= to; i++){
+		Mutation *m = ALLMUTS[i];
+		int mut_res = __accmut__cal_i64_bool(m->t_pre, left, right);
 		if(ori != mut_res){
 			pid_t pid =	__accmut__fork(i);	
 			if(pid > 0){
@@ -183,7 +268,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 void __accmut__process_st(int from, int to, int *addr){
 	int i;
 	for(i = from; i <= to; i++){
-	
+			
 	}
 }
 
@@ -197,3 +282,6 @@ int main(){
 	}
 	return 0;
 }
+
+
+#endif

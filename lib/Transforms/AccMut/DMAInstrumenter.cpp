@@ -151,27 +151,30 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 
 	if(cur_it->getOpcode() >= 14 && cur_it->getOpcode() <= 31){ // FOR ARITH INST
 		Type* ori_ty = cur_it->getType();
+		Function* f_process;
 		if(ori_ty->isIntegerTy(32)){
-			Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");// TODO:: int or unsigned ??!!
-			std::vector<Value*> int32_call_params;
-			std::stringstream ss;
-			ss<<mut_from;
-			ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
-			int32_call_params.push_back(from_i32);
-			ss.str("");
-			ss<<mut_to;
-			ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
-			int32_call_params.push_back(to_i32);
-			int32_call_params.push_back(cur_it->getOperand(0));
-			int32_call_params.push_back(cur_it->getOperand(1));
-			CallInst *call = CallInst::Create(f_process_i32, int32_call_params);
-			ReplaceInstWithInst(cur_it, call);
+			f_process = TheModule->getFunction("__accmut__process_i32_arith");// TODO:: int or unsigned ??!!
+		}else if(ori_ty->isIntegerTy(64)){
+			f_process = TheModule->getFunction("__accmut__process_i32_arith");
 		}
 
-		
+		std::vector<Value*> int_call_params;
+		std::stringstream ss;
+		ss<<mut_from;
+		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10)); 
+		int_call_params.push_back(from_i32);
+		ss.str("");
+		ss<<mut_to;
+		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
+		int_call_params.push_back(to_i32);
+		int_call_params.push_back(cur_it->getOperand(0));
+		int_call_params.push_back(cur_it->getOperand(1));
+		CallInst *call = CallInst::Create(f_process, int_call_params);
+		ReplaceInstWithInst(cur_it, call);
+			
 	}
 	else if(cur_it->getOpcode() == 52){// FOR ICMP INST
-		Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");			
+		Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32_cmp");	// TODO: add i64cmp
 		std::vector<Value*> int32_call_params;
 		std::stringstream ss;
 		ss<<mut_from;
