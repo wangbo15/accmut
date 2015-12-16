@@ -3,3 +3,6 @@ build/
 
 ## ignore the build libs ##
 *.[oa]
+
+##
+!tools/accmut/test/naive.c

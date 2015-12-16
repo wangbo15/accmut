@@ -71,6 +71,8 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 
 void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 	errs()<<"===  DMA INSTRUMENTING "<<F.getName()<<"  =====\n";
+
+	/*
 	Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");
 
 	if(!f_process_i32){
@@ -104,7 +106,7 @@ void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 		f_process_st = Function::Create(FuncTy,GlobalValue::ExternalLinkage,
 				"__accmut__process_st", TheModule); 
 		f_process_st->setCallingConv(CallingConv::C);		
-	}
+	}*/
 	
 		
 	std::vector<Mutation*>::iterator cur_mut = v->begin();
@@ -155,7 +157,10 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		if(ori_ty->isIntegerTy(32)){
 			f_process = TheModule->getFunction("__accmut__process_i32_arith");// TODO:: int or unsigned ??!!
 		}else if(ori_ty->isIntegerTy(64)){
-			f_process = TheModule->getFunction("__accmut__process_i32_arith");
+			f_process = TheModule->getFunction("__accmut__process_i64_arith");
+		}else{
+			llvm::errs()<<"TYPE ERROR @ instrument() ArithInst\n";
+			return insts;
 		}
 
 		std::vector<Value*> int_call_params;
@@ -174,30 +179,48 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 			
 	}
 	else if(cur_it->getOpcode() == 52){// FOR ICMP INST
-		Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32_cmp");	// TODO: add i64cmp
-		std::vector<Value*> int32_call_params;
+		Function* f_process;
+
+		if(cur_it->getOperand(0)->getType()->isIntegerTy(32)){
+			f_process = TheModule->getFunction("__accmut__process_i32_cmp");
+		}else if(cur_it->getOperand(0)->getType()->isIntegerTy(64)){
+			f_process = TheModule->getFunction("__accmut__process_i64_cmp");
+		}else{
+			llvm::errs()<<"TYPE ERROR @ instrument() ICmpInst\n";			
+			return insts;
+		}
+		
+		std::vector<Value*> int_call_params;
 		std::stringstream ss;
 		ss<<mut_from;
 		ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), 
 				APInt(32, StringRef(ss.str()), 10)); 
-		int32_call_params.push_back(from_i32);
+		int_call_params.push_back(from_i32);
 		ss.str("");
 		ss<<mut_to;
 		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(),
 			APInt(32, StringRef(ss.str()), 10));
-		int32_call_params.push_back(to_i32);
-		int32_call_params.push_back(cur_it->getOperand(0));
-		int32_call_params.push_back(cur_it->getOperand(1));
-		CallInst *call = CallInst::Create(f_process_i32, int32_call_params, 
+		int_call_params.push_back(to_i32);
+		int_call_params.push_back(cur_it->getOperand(0));
+		int_call_params.push_back(cur_it->getOperand(1));
+		CallInst *call = CallInst::Create(f_process, int_call_params, 
 				"", cur_it);
 		
 		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "");
 		insts++;
 		
-		ReplaceInstWithInst(cur_it, i32_conv);				
+		ReplaceInstWithInst(cur_it, i32_conv);
 	}
 	else if(cur_it->getOpcode() == 34){// FOR STORE INST
-		Function *f_process_st = TheModule->getFunction("__accmut__process_st");
+		Function *f_process_st;
+		if(cur_it->getOperand(0)->getType()->isIntegerTy(32)){
+			f_process_st = TheModule->getFunction("__accmut__process_st_i32");
+		}else if(cur_it->getOperand(0)->getType()->isIntegerTy(64)){
+			f_process_st = TheModule->getFunction("__accmut__process_st_i64");			
+		}else{
+			llvm::errs()<<"TYPE ERROR @ instrument() StoreInst\n";
+			return insts;
+		}		
 		std::vector<Value*> params;
 		std::stringstream ss;
 		ss<<mut_from;
@@ -207,37 +230,30 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		ss<<mut_to;
 		ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(), APInt(32, StringRef(ss.str()), 10));
 		params.push_back(to_i32);	
-		
 		params.push_back(cur_it->getOperand(1));	
-		
 		CallInst *call = CallInst::Create(f_process_st, params);		
 		ReplaceInstWithInst(cur_it, call);
 	}
 	else if(cur_it->getOpcode() == 55){// FOR CALL INST
-		CallInst* call = cast<CallInst>(cur_it);
+		Function *f;
 		Type* ori_ty = cur_it->getType();
 		if(ori_ty->isIntegerTy(32)){
-			Function *f = TheModule->getFunction("__accmut__process_call_i32");	
-
-			CallInst* call = CallInst::Create(f, "");
-			call->setCallingConv(CallingConv::C);
-			call->setTailCall(false);
-			AttributeSet attr;
-			call->setAttributes(attr);		
-
-			ReplaceInstWithInst(cur_it, call);
+			f = TheModule->getFunction("__accmut__process_call_i32");	
 		}else if(ori_ty->isVoidTy()){
-			Function *f = TheModule->getFunction("__accmut__process_call_void");
-
-
-			CallInst* call = CallInst::Create(f, "");
-			call->setCallingConv(CallingConv::C);
-			call->setTailCall(false);
-			AttributeSet attr;
-			call->setAttributes(attr);
-
-			ReplaceInstWithInst(cur_it, call);		
+			f = TheModule->getFunction("__accmut__process_call_void");	
+		}else if(ori_ty->isIntegerTy(64)){
+			f = TheModule->getFunction("__accmut__process_call_i64");
+		}else{
+			llvm::errs()<<"TYPE ERROR @ instrument() CallInst\n";			
+			return insts;
 		}	
+		CallInst* call = CallInst::Create(f, "");
+		call->setCallingConv(CallingConv::C);
+		call->setTailCall(false);
+		AttributeSet attr;
+		call->setAttributes(attr);		
+		ReplaceInstWithInst(cur_it, call);
+		
 	}
 	
 	return insts;

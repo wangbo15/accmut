@@ -94,13 +94,21 @@ int __accmut__state_changed(){
 	return 0;
 }
 
+//////
+
 int __accmut__process_call_i32(){
     return 0;
+}
+
+long __accmut__process_call_i64(){
+	return 0;
 }
 
 void __accmut__process_call_void(){
 
 }
+
+///////
 
 int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 	switch(op){
@@ -180,7 +188,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 long __accmut__process_i64_arith(int from, int to, long left, long right){
 	long ori = __accmut__cal_i64_arith(ALLMUTS[from]->op , left, right);
-	printf("ORIG RESULT : %l", ori);
+	printf("ORIG RESULT : %ld", ori);
 	int i;
 	for(i = from; i <= to; i++){// to + 1 or to ?
 		Mutation *m = ALLMUTS[i];
@@ -265,13 +273,21 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 	return ori;
 }
 
-void __accmut__process_st(int from, int to, int *addr){
+void __accmut__process_st_i32(int from, int to, int *addr){
 	int i;
 	for(i = from; i <= to; i++){
 			
 	}
 }
 
+void __accmut__process_st_i64(int from, int to, long *addr){
+	int i;
+	for(i = from; i <= to; i++){
+			
+	}
+}
+
+/*
 int main(){
 	__accmut__init();
 	int i;
@@ -282,6 +298,7 @@ int main(){
 	}
 	return 0;
 }
+*/
 
 
 #endif

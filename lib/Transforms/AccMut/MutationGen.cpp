@@ -202,6 +202,14 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 			<< ":"<<0<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();
+	}else if(tt->isIntegerTy(64)){
+		//1. if the func returns a int64 val, let it be 0
+		//errs()<<"IT IS A 64 !!\n";
+		std::stringstream ss;
+		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<64<<'\n';
+		mutation_id++;
+		ofresult<<ss.str();		
 	}
 }
 
