@@ -38,7 +38,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 	}
 	if(F.getName().equals("main")){
 		// TODO: intrument main
-/*
+
 		Function* finit = TheModule->getFunction("__accmut__init");
 		if (!finit) {
 			std::vector<Type*>Fty_args;
@@ -57,7 +57,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 		call_init->setTailCall(false);
 		AttributeSet call_init_PAL;
 		call_init->setAttributes(call_init_PAL);
-		*/
+		
 		return false;
 	}
 	
@@ -71,43 +71,6 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 
 void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 	errs()<<"===  DMA INSTRUMENTING "<<F.getName()<<"  =====\n";
-
-	/*
-	Function* f_process_i32 = TheModule->getFunction("__accmut__process_i32");
-
-	if(!f_process_i32){
-		std::vector<Type*>Fty_args;
-		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
- 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
- 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
- 		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
-		FunctionType* Fty = FunctionType::get(Type::getInt32Ty(TheModule->getContext()), Fty_args, true);
-
-		f_process_i32 = Function::Create(
-			 	 Fty,	//Type
-				 GlobalValue::ExternalLinkage,	//Linkage
-				 "__accmut__process_i32",	//Name
-				 TheModule); 
-		f_process_i32->setCallingConv(CallingConv::C);
-	}
-
-	Function *f_process_st = TheModule->getFunction("__accmut__process_st");
-	if(!f_process_st){
-		std::vector<Type*>Fty_args;
-		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
-		Fty_args.push_back(IntegerType::get(TheModule->getContext(), 32));
-		PointerType* PointerTy_1 = PointerType::get(IntegerType::get(TheModule->getContext(), 32), 0);
-
-		Fty_args.push_back(PointerTy_1);
-		FunctionType* FuncTy = FunctionType::get(
-									Type::getVoidTy(TheModule->getContext()),
-									Fty_args,
-									false);	
-		f_process_st = Function::Create(FuncTy,GlobalValue::ExternalLinkage,
-				"__accmut__process_st", TheModule); 
-		f_process_st->setCallingConv(CallingConv::C);		
-	}*/
-	
 		
 	std::vector<Mutation*>::iterator cur_mut = v->begin();
 	std::vector<Mutation*>::iterator beg = cur_mut;
@@ -146,7 +109,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 	int insts = 0;
 	
 	BasicBlock::iterator cur_it = getLocation(F, instrumented_insts, index);
-	Function::iterator cur_bb = cur_it->getParent();
+	//Function::iterator cur_bb = cur_it->getParent();
 
 	errs()<<" 	instrumenting this IR >>>> ";
 	cur_it->dump();
@@ -234,7 +197,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		CallInst *call = CallInst::Create(f_process_st, params);		
 		ReplaceInstWithInst(cur_it, call);
 	}
-	else if(cur_it->getOpcode() == 55){// FOR CALL INST
+	/*else if(cur_it->getOpcode() == 55){// FOR CALL INST
 		Function *f;
 		Type* ori_ty = cur_it->getType();
 		if(ori_ty->isIntegerTy(32)){
@@ -254,7 +217,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		call->setAttributes(attr);		
 		ReplaceInstWithInst(cur_it, call);
 		
-	}
+	}*/
 	
 	return insts;
 }

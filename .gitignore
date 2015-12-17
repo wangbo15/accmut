@@ -5,4 +5,7 @@ build/
 *.[oa]
 
 ##
+tools/accmut/*.ll
+tools/accmut/*.bk
 !tools/accmut/test/naive.c
+

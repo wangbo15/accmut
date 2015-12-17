@@ -30,8 +30,8 @@ typedef struct Mutation{
 	int f_tp;
 	//for LVR
 	int op_index;
-	int s_con;
-	int t_con;
+	long s_con;		// TODO: 'long' is enough ?
+	long t_con;
 }Mutation;
 
 Mutation* ALLMUTS[MAXMUTNUM + 1];
@@ -78,8 +78,9 @@ void __accmut__init(){
 			m->op = op;
 			m->f_tp=f_tp;
 		}else if(!strcmp(type, "LVR")){
-			int op, op_i, s_c, t_c;
-			sscanf(tail, "%d:%d:%d:%d", &op, &op_i, &s_c, &t_c);
+			int op, op_i;
+			long s_c, t_c;
+			sscanf(tail, "%d:%d:%ld:%ld", &op, &op_i, &s_c, &t_c);
 			m->op = op;
 			m->op_index = op_i;
 			m->s_con = s_c;
@@ -87,6 +88,8 @@ void __accmut__init(){
 		}	
 		ALLMUTS[id] = m;
 	}
+
+	printf("######### INIT END ####\n");
 }
 
 int __accmut__state_changed(){
@@ -171,8 +174,8 @@ int __accmut__fork(int mutid){
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_arith(ALLMUTS[from]->op , left, right);
-	printf("ORIG RESULT : %d", ori);
-	int i;
+	//printf("ORIG RESULT : i32 arith %d\n", ori);
+	/*int i;
 	for(i = from; i <= to; i++){// to + 1 or to ?
 		Mutation *m = ALLMUTS[i];
 		int mut_res = __accmut__cal_i32_arith(m->t_op, left, right);
@@ -182,14 +185,14 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 				return mut_res;
 			}
 		}
-	}	
+	}*/	
 	return ori;
 }
 
 long __accmut__process_i64_arith(int from, int to, long left, long right){
 	long ori = __accmut__cal_i64_arith(ALLMUTS[from]->op , left, right);
-	printf("ORIG RESULT : %ld", ori);
-	int i;
+	//printf("ORIG RESULT : i64 arith %ld\n", ori);
+	/*int i;
 	for(i = from; i <= to; i++){// to + 1 or to ?
 		Mutation *m = ALLMUTS[i];
 		long mut_res = __accmut__cal_i64_arith(m->t_op, left, right);
@@ -199,7 +202,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 				return mut_res;
 			}
 		}
-	}	
+	}*/	
 	return ori;
 }
 
@@ -242,8 +245,8 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right);
-	//printf("ORIG RESULT : %d", ori)
-	int i;
+	//printf("__accmut__process_i32_cmp ORIG RESULT : %d\n", ori);
+	/*int i;
 	for(i = from; i <= to; i++){
 		Mutation *m = ALLMUTS[i];
 		int mut_res = __accmut__cal_i32_bool(m->t_pre, left, right);
@@ -253,13 +256,14 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 				return mut_res;
 			}
 		}
-	}
+	}*/
 	return ori;
 }
 
 int __accmut__process_i64_cmp(int from, int to, long left, long right){
-	long ori = __accmut__cal_i64_bool(ALLMUTS[from]->s_pre, left, right);
-	int i;
+	long ori = __accmut__cal_i64_bool(ALLMUTS[from]->s_pre, left, right);	
+	//printf("__accmut__process_i64_cmp ORIG RESULT : %d\n", ori);
+	/*int i;
 	for(i = from; i <= to; i++){
 		Mutation *m = ALLMUTS[i];
 		int mut_res = __accmut__cal_i64_bool(m->t_pre, left, right);
@@ -269,22 +273,26 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 				return mut_res;
 			}
 		}
-	}
+	}*/
 	return ori;
 }
 
 void __accmut__process_st_i32(int from, int to, int *addr){
-	int i;
+	//orig
+	*addr = ALLMUTS[from]->s_con;
+/*	int i;
 	for(i = from; i <= to; i++){
 			
-	}
+	}*/
 }
 
 void __accmut__process_st_i64(int from, int to, long *addr){
-	int i;
+	//orig	
+	*addr = ALLMUTS[from]->s_con;
+	/*int i;
 	for(i = from; i <= to; i++){
 			
-	}
+	}*/
 }
 
 /*
@@ -299,6 +307,5 @@ int main(){
 	return 0;
 }
 */
-
 
 #endif

@@ -1,5 +1,6 @@
 #include"../accmut.h"
 
+/*
 int test_ari(int a, int b){
     int res = a + b;
     res = res << b;
@@ -52,6 +53,25 @@ long test_l(long a, long b){
 	long f = 10000;
 	return c+d+e+f;
 }
+*/
+
+/*int test(int a, int b){
+    int res = a + b;
+    res = res << b;
+    return res;
+}*/
+
+/*int test(int a, int b){
+	if(a > b){
+		return a;	
+	}
+	return b;
+}*/
+
+int test(int a, int b){
+	int c = 3;
+	return a+b+c;
+}
 
 int main(){
     int a, b;
@@ -63,8 +83,8 @@ int main(){
 	long c, d;
 	c = 888;
 	d = 999;
-	long res_l = test_l(c, d);
-	printf("%ld\n", res_l);
+	//long res_l = test_l(c, d);
+	//printf("%ld\n", res_l);
     return 0;
 }
 

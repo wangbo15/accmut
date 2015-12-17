@@ -1,0 +1,111 @@
+264,269d263
+< define i64 @__accmut__process_call_i64() #0 {
+< entry:
+<   ret i64 0
+< }
+< 
+< ; Function Attrs: nounwind uwtable
+1252c1246
+<   %add = call i32 @__accmut__process_i32_arith(i32 1, i32 6, i32 %0, i32 %1)
+---
+>   %add = add nsw i32 %0, %1
+1256c1250
+<   %shl = call i32 @__accmut__process_i32_arith(i32 7, i32 11, i32 %2, i32 %3)
+---
+>   %shl = shl i32 %2, %3
+1272c1266
+<   %add = call i64 @__accmut__process_i64_arith(i32 12, i32 17, i64 %conv, i64 %1)
+---
+>   %add = add nsw i64 %conv, %1
+1286,1287c1280
+<   %2 = call i32 @__accmut__process_i32_cmp(i32 18, i32 26, i32 %0, i32 %1)
+<   %cmp = trunc i32 %2 to i1
+---
+>   %cmp = icmp sgt i32 %0, %1
+1291,1292c1284,1285
+<   %3 = load i32, i32* %a.addr, align 4
+<   store i32 %3, i32* %retval, align 4
+---
+>   %2 = load i32, i32* %a.addr, align 4
+>   store i32 %2, i32* %retval, align 4
+1296,1297c1289,1290
+<   %4 = load i32, i32* %b.addr, align 4
+<   store i32 %4, i32* %retval, align 4
+---
+>   %3 = load i32, i32* %b.addr, align 4
+>   store i32 %3, i32* %retval, align 4
+1301,1302c1294,1295
+<   %5 = load i32, i32* %retval, align 4
+<   ret i32 %5
+---
+>   %4 = load i32, i32* %retval, align 4
+>   ret i32 %4
+1315,1316c1308
+<   %2 = call i32 @__accmut__process_i64_cmp(i32 27, i32 35, i64 %0, i64 %1)
+<   %cmp = trunc i32 %2 to i1
+---
+>   %cmp = icmp eq i64 %0, %1
+1320,1321c1312,1313
+<   %3 = load i64, i64* %a.addr, align 8
+<   store i64 %3, i64* %retval, align 8
+---
+>   %2 = load i64, i64* %a.addr, align 8
+>   store i64 %2, i64* %retval, align 8
+1325,1326c1317,1318
+<   %4 = load i64, i64* %b.addr, align 8
+<   store i64 %4, i64* %retval, align 8
+---
+>   %3 = load i64, i64* %b.addr, align 8
+>   store i64 %3, i64* %retval, align 8
+1330,1331c1322,1323
+<   %5 = load i64, i64* %retval, align 8
+<   ret i64 %5
+---
+>   %4 = load i64, i64* %retval, align 8
+>   ret i64 %4
+1343c1335
+<   %add = call i32 @__accmut__process_i32_arith(i32 36, i32 41, i32 %0, i32 %1)
+---
+>   %add = add nsw i32 %0, %1
+1355c1347
+<   %add = call i32 @__accmut__process_i32_arith(i32 42, i32 52, i32 100, i32 %0)
+---
+>   %add = add nsw i32 100, %0
+1393c1385
+<   call void @__accmut__process_st_i32(i32 57, i32 61, i32* %f)
+---
+>   store i32 4, i32* %f, align 4
+1396c1388
+<   %add = call i32 @__accmut__process_i32_arith(i32 62, i32 67, i32 %7, i32 %8)
+---
+>   %add = add nsw i32 %7, %8
+1398c1390
+<   %add3 = call i32 @__accmut__process_i32_arith(i32 68, i32 73, i32 %add, i32 %9)
+---
+>   %add3 = add nsw i32 %add, %9
+1400c1392
+<   %add4 = call i32 @__accmut__process_i32_arith(i32 74, i32 79, i32 %add3, i32 %10)
+---
+>   %add4 = add nsw i32 %add3, %10
+1431c1423
+<   call void @__accmut__process_st_i64(i32 83, i32 87, i64* %f)
+---
+>   store i64 10000, i64* %f, align 8
+1434c1426
+<   %add = call i64 @__accmut__process_i64_arith(i32 88, i32 93, i64 %6, i64 %7)
+---
+>   %add = add nsw i64 %6, %7
+1437c1429
+<   %add7 = call i64 @__accmut__process_i64_arith(i32 94, i32 99, i64 %add, i64 %conv6)
+---
+>   %add7 = add nsw i64 %add, %conv6
+1439c1431
+<   %add8 = call i64 @__accmut__process_i64_arith(i32 100, i32 105, i64 %add7, i64 %9)
+---
+>   %add8 = add nsw i64 %add7, %9
+1446d1437
+<   call void @__accmut__init()
+1486c1477
+< !0 = !{!"clang version 3.8.0  (https://github.com/wangbo15/accmut.git eeede8a285df0b3cbff367c9276426c7fc1e05bd)"}
+---
+> !0 = !{!"clang version 3.8.0  (https://github.com/wangbo15/accmut.git e4df7c7de7acb47247efcd9310fa71cca21026c1)"}

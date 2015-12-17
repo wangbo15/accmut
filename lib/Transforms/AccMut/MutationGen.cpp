@@ -216,7 +216,7 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 // for a numeral value T, LVR will generate 4 mut: 0, 1, -1, T+1, T-1 
 void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 	int num = inst->getNumOperands();
-	for(int i; i < num; i++){
+	for(int i = 0; i < num; i++){
 		if (const ConstantInt *CI = dyn_cast<ConstantInt>(inst->getOperand(i))){
 
 				//CI->dump();
