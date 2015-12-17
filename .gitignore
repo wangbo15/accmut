@@ -7,6 +7,6 @@ build/
 ##
 tools/accmut/*.ll
 tools/accmut/*.bk
-#tools/accmut/test/*
-#!tools/accmut/test/naive.c
+tools/accmut/test/*
+!tools/accmut/test/naive.c
 
