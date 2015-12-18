@@ -7,6 +7,9 @@
 #include<unistd.h>
 
 #define MAXMUTNUM 10000
+#define MAX_MUTS_PER_INST 32
+
+int MUTSNUM = 0;
 
 typedef enum MTYPE{
 	AOR,
@@ -38,8 +41,14 @@ Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MUTATION_ID = 0;
 
 void __accmut__init(){
-	char path[100]="/home/nightwish/tmp/accmut/mutations.txt";	
-	FILE *fp = fopen(path, "r");
+	FILE *fp = NULL;
+    char numpath[] ="/home/nightwish/tmp/accmut/mutsnum.txt";	// TODO: change to getenv()
+	fp = fopen(numpath, "r");
+    fscanf(fp, "%d", &MUTSNUM);
+    fclose(fp);
+	//
+	char path[]="/home/nightwish/tmp/accmut/mutations.txt";	
+	fp = fopen(path, "r");
 	if(fp == NULL){
 		printf("FILE ERROR: mutation.txt can not open !!!\n");
 		exit(0);
@@ -88,8 +97,8 @@ void __accmut__init(){
 		}	
 		ALLMUTS[id] = m;
 	}
-
-	printf("######### INIT END ####\n");
+    fclose(fp);
+	printf("######### INIT END, %d MUTS LOADED ####\n", MUTSNUM);
 }
 
 int __accmut__state_changed(){
@@ -295,7 +304,6 @@ void __accmut__process_st_i64(int from, int to, long *addr){
 	}*/
 }
 
-/*
 int main(){
 	__accmut__init();
 	int i;
@@ -306,6 +314,5 @@ int main(){
 	}
 	return 0;
 }
-*/
 
 #endif

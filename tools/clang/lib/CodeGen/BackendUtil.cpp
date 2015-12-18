@@ -48,6 +48,10 @@
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
 #include "llvm/Transforms/AccMut/DMAInstrumenter.h"
+#if ACCMUT_GEN_MUT
+#include <string>
+#include <sstream>
+#endif
 
 using namespace clang;
 using namespace llvm;
@@ -595,6 +599,7 @@ bool EmitAssemblyHelper::AddEmitPasses(BackendAction Action,
 
 #if ACCMUT_GEN_MUT
 MutationGen *mutationGen;
+extern int mutation_id;
 #endif
 
 #if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
@@ -667,6 +672,19 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
       if (!F.isDeclaration())
         PerFunctionPasses->run(F);
     PerFunctionPasses->doFinalization();
+
+	#if ACCMUT_GEN_MUT
+		int generatedNum = mutation_id - 1;
+		llvm::errs()<<"###### TOTAL GENERATED "<<generatedNum<<" MUTATIONS ######\n";
+		std::string home = getenv("HOME");
+		std::stringstream ss;
+		ss<<home<<"/tmp/accmut/mutsnum.txt";
+		std::ofstream ofresult; 
+		ofresult.open(ss.str(), std::ios::trunc);
+		ofresult<<generatedNum;
+		ofresult.close();
+	#endif 
+	
   }
 
   if (PerModulePasses) {
