@@ -11,6 +11,10 @@
 
 int MUTSNUM = 0;
 
+//TODO : change to bit set ?
+int *I = NULL;	// a set of mutation IDs represented by the current process.
+//int ISIZE = 0;
+
 typedef enum MTYPE{
 	AOR,
 	LOR,
@@ -41,12 +45,22 @@ Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MUTATION_ID = 0;
 
 void __accmut__init(){
+	//get MUTSNUM
 	FILE *fp = NULL;
     char numpath[] ="/home/nightwish/tmp/accmut/mutsnum.txt";	// TODO: change to getenv()
 	fp = fopen(numpath, "r");
     fscanf(fp, "%d", &MUTSNUM);
     fclose(fp);
-	//
+	//for *I
+	I = (int *)malloc(sizeof(int)*(MUTSNUM + 1));
+	if(I == NULL){
+		printf("MALLOC ERROR!\n");
+		exit(0);
+	}
+	memset(I, 1, sizeof(int)*(MUTSNUM + 1));
+	//ISIZE = MUTSNUM + 1;
+
+	//init ALLMUTS
 	char path[]="/home/nightwish/tmp/accmut/mutations.txt";	
 	fp = fopen(path, "r");
 	if(fp == NULL){
@@ -253,20 +267,95 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 }
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
-	int ori = __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right);
-	//printf("__accmut__process_i32_cmp ORIG RESULT : %d\n", ori);
-	/*int i;
+	int i;
+	int len = to - from + 2;//all mutations(from - to + 1) and original code
+	int V[len] = {0};// TODO:: change to bit operate
+	int VSIZE = 0;
+	// filter_variants(V, I)
+	if(I[0] > 0){//check if the origninal is enabled for this mutation
+		V[0] = 1;
+		VSIZE++;
+	}
+    int tmp;
 	for(i = from; i <= to; i++){
-		Mutation *m = ALLMUTS[i];
-		int mut_res = __accmut__cal_i32_bool(m->t_pre, left, right);
-		if(ori != mut_res){
-			pid_t pid =	__accmut__fork(i);	
-			if(pid > 0){
-				return mut_res;
-			}
+		if(I[i] > 0){
+			V[i - from + 1] = 1;
+            tmp = i; // TODO::check
+			VSIZE++;
 		}
-	}*/
-	return ori;
+	}
+	if(VSIZE == 1){ // at the orig v or at a certain mut
+        if(V[0] == 1){
+		    int ori = __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right); // TODO :: right ?
+            printf("__accmut__process_i32_cmp ORIG RESULT : %d\n", ori);	
+            return ori;
+        }else{
+            int muted = __accmut__cal_i32_bool(ALLMUTS[tmp]->t_pre, left, right);
+            return muted;
+        }
+	}
+	int V_RES[len]; 
+    int V_RES_CLS[len];
+    if(V[0] == 1){
+        V_RES[0] = __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right);// TODO:: orig version can be omitted?
+        V_RES_CLS[0] = 0;
+    }
+    //compute each variant and classcify
+	for(i = from; i <= to; i++){
+        if(V[i - from + 1] == 0){
+            continue;
+        }
+		Mutation *m = ALLMUTS[i];
+		int mut_res = __accmut__cal_i32_bool(m->t_pre, left, right); // TODO: reduction ?
+		V_RES[i - from + 1] = mut_res;
+        int j;
+        for(j = 0; j <= i - from; j++){// TODO ::check
+            if(V_RES[j] == mut_res){
+                V_RES_CLS[i - from + 1] = j; 
+                break;
+            }
+        }
+        if(j == i - from + 1){
+            V_RES_CLS[j] = j;
+        }
+	} 
+    //select the minnum as Xcur
+    int xcur;
+    for(i = 0; i < len; i++){
+    	if(V_RES_CLS[i] == i){
+    		xcur = i;
+    	}
+    }
+    
+	for(i = xcur + 1; i < len; i++){
+		if(V_RES_CLS[i] == i){ // the header of a eqiu class
+			pid_t pid = fork(); 
+			if(pid < 0){
+				printf("FORK ERR!!! @__accmut__process_i32_cmp  FROM: %d TO: %d\n", from, to);
+			}else if(pid == 0){ // child process
+				//filter(I, V)
+                memset(I, 0, sizeof(int)*(MUTSNUM + 1));
+                I[i + from - 1] = 1;
+                int j;
+                for(j = i + 1; j < len; j++){
+                   if(V_RES_CLS[i] == V_RES_CLS[j]){
+                    I[j + from - 1] = 1;
+                   } 
+                }
+				return V_RES[i];
+			}else{// fater process
+				waitpid(pid); // TODO:: add timer
+			} 
+		} 
+    }
+    //
+    for(i = xcur + 1; i < len; i++){
+    	if(V_RES_CLS[i] == xcur){
+    		I[i + from - 1] = 1;	// TODO::check
+    	}
+    }
+    
+    return V_RES[xcur];
 }
 
 int __accmut__process_i64_cmp(int from, int to, long left, long right){
@@ -304,6 +393,7 @@ void __accmut__process_st_i64(int from, int to, long *addr){
 	}*/
 }
 
+/*
 int main(){
 	__accmut__init();
 	int i;
@@ -314,5 +404,6 @@ int main(){
 	}
 	return 0;
 }
+*/
 
 #endif
