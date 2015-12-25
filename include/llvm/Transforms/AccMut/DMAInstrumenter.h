@@ -1,8 +1,8 @@
 //===----------------------------------------------------------------------===//
 //
- // This file decribes the dynamic mutation analysis IR instrumenter pass
+// This file decribes the dynamic mutation analysis IR instrumenter pass
 // 
- // Add by Wang Bo. OCT 21, 2015
+// Add by Wang Bo. OCT 21, 2015
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,11 +27,7 @@ public:
 	virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 	virtual bool runOnFunction(Function &F);
 	DMAInstrumenter(Module *M);	
-	//static vector<Mutation*> AllMutsVector;		// TODO: change to SmallVector
-	static map<string, vector<Mutation*>* > AllMutsMap;
-	static void getAllMutations();
 private:
-	static Mutation * getMutation(string line);
 	void filtMutsByIndex(Function &F, vector<Mutation*>* v);
 	int instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts);
 	BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);

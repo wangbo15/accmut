@@ -5,6 +5,8 @@
 #include<string.h>
 #include<stdio.h>
 #include<unistd.h>
+#include<sys/wait.h>
+#include<sys/types.h>
 
 #define MAXMUTNUM 10000
 #define MAX_MUTS_PER_INST 32
@@ -267,6 +269,8 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 }
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
+    return  __accmut__cal_i32_bool(ALLMUTS[from]->s_pre, left, right); 
+    /*
 	int i;
 	int len = to - from + 2;//all mutations(from - to + 1) and original code
 	int V[len] = {0};// TODO:: change to bit operate
@@ -356,6 +360,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
     }
     
     return V_RES[xcur];
+    */
 }
 
 int __accmut__process_i64_cmp(int from, int to, long left, long right){

@@ -681,7 +681,7 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 		ss<<home<<"/tmp/accmut/mutsnum.txt";
 		std::ofstream ofresult; 
 		ofresult.open(ss.str(), std::ios::trunc);
-		ofresult<<generatedNum;
+		ofresult<<generatedNum<<'\n';
 		ofresult.close();
 	#endif 
 	
