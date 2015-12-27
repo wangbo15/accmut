@@ -12,6 +12,9 @@
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
 
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+
 #include<map>
 #include<vector>
 #include<string>
@@ -25,6 +28,7 @@ public:
 	static map<string, vector<Mutation*>* > AllMutsMap;
 	static void getAllMutations();
 	static void dumpAllMuts();
+	static BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
 private:
 	static bool allMutsGeted;
 	static Mutation * getMutation(string line);

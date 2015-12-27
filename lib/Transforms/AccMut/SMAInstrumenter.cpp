@@ -29,7 +29,7 @@ SMAInstrumenter::SMAInstrumenter(Module *M) : FunctionPass(ID) {
 	MutUtil::getAllMutations();
 }
 
-bool DMAInstrumenter::runOnFunction(Function & F){
+bool SMAInstrumenter::runOnFunction(Function & F){
 	if(F.getName().startswith("__accmut__")){
 		return false;
 	}
@@ -42,7 +42,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 			finit = Function::Create(
 			 	Fty,	//Type
 				 GlobalValue::ExternalLinkage,	//Linkage
-				 "__accmut__init",	//Name
+				 "__accmut__sma_init",	//Name
 				 TheModule); 
 			finit->setCallingConv(CallingConv::C);
 		}
@@ -54,7 +54,18 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 		call_init->setAttributes(call_init_PAL);
 		return true;
 	}
+	// TODO:
+
 	
 	return true;
 }
+
+
+/*------------------reserved begin-------------------*/
+void SMAInstrumenter::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.setPreservesAll();
+}
+
+char SMAInstrumenter::ID = 0;
+/*-----------------reserved end --------------------*/
 

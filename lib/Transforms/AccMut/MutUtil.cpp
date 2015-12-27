@@ -142,3 +142,16 @@ Mutation *MutUtil::getMutation(string line){
 	return m;
 }
 
+BasicBlock::iterator MutUtil::getLocation(Function &F, int instrumented_insts, int index){
+	int cur = 0;
+	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
+		BasicBlock *BB = FI;
+		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, cur++){
+			if(index + instrumented_insts == cur ){
+				return BI;
+			}
+		}
+	}
+	return F.back().end();	
+}
+

@@ -1,13 +1,13 @@
 //===----------------------------------------------------------------------===//
 //
- // This file decribes the static mutation analysis IR instrumenter pass
+// This file decribes the static mutation schemata IR instrumenter pass
 // 
- // Add by Wang Bo. DEC 21, 2015
+// Add by Wang Bo. DEC 27, 2015
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef ACCMUT_SMA_INSTRUMENTER_H
-#define ACCMUT_SMA_INSTRUMENTER_H
+#ifndef ACCMUT_MS_INSTRUMENTER_H
+#define ACCMUT_MS_INSTRUMENTER_H
 
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
@@ -21,17 +21,17 @@ using namespace llvm;
 using namespace std;
 
 
-class SMAInstrumenter: public FunctionPass{
+class MSInstrumenter: public FunctionPass{
 public:
 	static char ID;// Pass identification, replacement for typeid
 	virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 	virtual bool runOnFunction(Function &F);
-	SMAInstrumenter(Module *M);
+	MSInstrumenter(Module *M);
 private:	
 	void filtMutsByIndex(Function &F, vector<Mutation*>* v);
-	int instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts);
-	BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
+	int instrument(Function &F, vector<Mutation *>* v, int index, int mut_from, int mut_to, int instrumented_insts);
 	Module *TheModule;
 };
 
 #endif
+

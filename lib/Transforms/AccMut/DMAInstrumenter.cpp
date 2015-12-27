@@ -73,26 +73,27 @@ void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 
 	int instrumented_insts = 0;
 
-	while(cur_mut != v->end()){
+	while(cur_mut != v->end()){//find a mutations' interval of the vector
 		if((*cur_mut)->index != (*beg)->index){
-			errs()<<"IR "<<(*beg)->index<<" : mut "<<(*beg)->id<<" ~~ mut "<<(*(cur_mut-1))->id<<"\n";
-						errs()<<" II : "<<instrumented_insts<<"\n";
+			//errs()<<"IR "<<(*beg)->index<<" : mut "<<(*beg)->id<<" ~~ mut "<<(*(cur_mut-1))->id<<"\n";
+			//			errs()<<" II : "<<instrumented_insts<<"\n";
 
 			int insts = instrument(F, (*beg)->index, (*beg)->id, (*(cur_mut-1))->id, instrumented_insts);
 			instrumented_insts+=insts;
 
-			errs()<<" III : "<<instrumented_insts<<"\n";
+			//errs()<<" III : "<<instrumented_insts<<"\n";
 
 			beg = cur_mut;
 			continue;
 		}
 		if(cur_mut == (v->end() -1)){
-			errs()<<(*beg)->index<<" : "<<(*beg)->id<<"~"<<(*cur_mut)->id<<"\n";
-						errs()<<" II : "<<instrumented_insts<<"\n";
+			//errs()<<(*beg)->index<<" : "<<(*beg)->id<<"~"<<(*cur_mut)->id<<"\n";
+			//			errs()<<" II : "<<instrumented_insts<<"\n";
 
 			int insts = instrument(F, (*beg)->index, (*beg)->id, (*cur_mut)->id, instrumented_insts);
 			instrumented_insts+=insts;
-			errs()<<" III : "<<instrumented_insts<<"\n";
+			
+			//errs()<<" III : "<<instrumented_insts<<"\n";
 		}
 		cur_mut++;
 	}
@@ -104,7 +105,7 @@ void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts){
 	int insts = 0;
 	
-	BasicBlock::iterator cur_it = getLocation(F, instrumented_insts, index);
+	BasicBlock::iterator cur_it = MutUtil::getLocation(F, instrumented_insts, index);
 	//Function::iterator cur_bb = cur_it->getParent();
 
 	errs()<<" 	instrumenting this IR >>>> ";
@@ -193,7 +194,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		CallInst *call = CallInst::Create(f_process_st, params);		
 		ReplaceInstWithInst(cur_it, call);
 	}
-	/*else if(cur_it->getOpcode() == 55){// FOR CALL INST
+	else if(cur_it->getOpcode() == 55){// FOR CALL INST
 		Function *f;
 		Type* ori_ty = cur_it->getType();
 		if(ori_ty->isIntegerTy(32)){
@@ -213,11 +214,12 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		call->setAttributes(attr);		
 		ReplaceInstWithInst(cur_it, call);
 		
-	}*/
+	}
 	
 	return insts;
 }
 
+/*
 BasicBlock::iterator DMAInstrumenter::getLocation(Function &F, int instrumented_insts, int index){
 	int cur = 0;
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
@@ -230,7 +232,7 @@ BasicBlock::iterator DMAInstrumenter::getLocation(Function &F, int instrumented_
 	}
 	return F.back().end();	
 }
-
+*/
 
 /*------------------reserved begin-------------------*/
 void DMAInstrumenter::getAnalysisUsage(AnalysisUsage &AU) const {
