@@ -47,10 +47,18 @@
 #include "llvm/Transforms/AccMut/MutationGen.h"
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
-#include "llvm/Transforms/AccMut/DMAInstrumenter.h"
+
 #if ACCMUT_GEN_MUT
 #include <string>
 #include <sstream>
+#endif
+
+#if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+#include "llvm/Transforms/AccMut/DMAInstrumenter.h"
+#endif
+
+#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+#include "llvm/Transforms/AccMut/SMAInstrumenter.h"
 #endif
 
 using namespace clang;
@@ -606,6 +614,9 @@ extern int mutation_id;
 DMAInstrumenter *dmaInstru;
 #endif
 
+#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+SMAInstrumenter *smaInstruEval;
+#endif
 //-----------end-------------------
 
 void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
@@ -663,6 +674,10 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 		PerFunctionPasses->add(dmaInstru);
 	#endif
 
+	#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+		smaInstruEval = new SMAInstrumenter(TheModule);
+		PerFunctionPasses->add(smaInstruEval);
+	#endif
 	//-----------end-------------------
 	
     PrettyStackTraceString CrashInfo("Per-function optimization");

@@ -194,7 +194,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		CallInst *call = CallInst::Create(f_process_st, params);		
 		ReplaceInstWithInst(cur_it, call);
 	}
-	else if(cur_it->getOpcode() == 55){// FOR CALL INST
+/*	else if(cur_it->getOpcode() == 55){// FOR CALL INST
 		Function *f;
 		Type* ori_ty = cur_it->getType();
 		if(ori_ty->isIntegerTy(32)){
@@ -214,7 +214,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		call->setAttributes(attr);		
 		ReplaceInstWithInst(cur_it, call);
 		
-	}
+	}*/
 	
 	return insts;
 }

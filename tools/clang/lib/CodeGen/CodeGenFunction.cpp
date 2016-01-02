@@ -1813,10 +1813,25 @@ CodeGenFunction::SanitizerScope::~SanitizerScope() {
   CGF->IsSanitizerScope = false;
 }
 
+//add by wb
+using clang::Stmt;
+using llvm::Value;
+
+extern clang::Stmt* curStmt;
+extern std::map<Value*, Stmt*> toStmtMap;
+
 void CodeGenFunction::InsertHelper(llvm::Instruction *I,
                                    const llvm::Twine &Name,
                                    llvm::BasicBlock *BB,
                                    llvm::BasicBlock::iterator InsertPt) const {
+
+
+	llvm::errs()<<" ###################  InsertHelper";
+	llvm::errs()<<*I<<"\n";
+	if (I && curStmt){
+      		toStmtMap[I] = curStmt;
+    	}
+								   
   LoopStack.InsertHelper(I);
   if (IsSanitizerScope)
     CGM.getSanitizerMetadata()->disableSanitizerForInstruction(I);

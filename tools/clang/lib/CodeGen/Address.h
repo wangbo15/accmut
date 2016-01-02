@@ -116,4 +116,12 @@ namespace llvm {
   }
 }
 
+//---- add for BUG 
+namespace clang {
+  // Make our custom isa and cast available in namespace clang, to mirror
+  // what we do for LLVM's versions in Basic/LLVM.h.
+  using llvm::isa;
+  using llvm::cast;
+}
+
 #endif

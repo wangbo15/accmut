@@ -30,6 +30,17 @@
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/Support/CBindingWrapping.h"
 
+//add by wb
+//#include "clang/AST/Stmt.h"
+#include "llvm/Support/raw_ostream.h"
+
+//using clang::Stmt;
+//using llvm::Value;
+
+//extern clang::Stmt* curStmt;
+//extern std::map<Value*, Stmt*> toStmtMap;
+
+
 namespace llvm {
 class MDNode;
 
@@ -584,6 +595,14 @@ public:
   InstTy *Insert(InstTy *I, const Twine &Name = "") const {
     this->InsertHelper(I, Name, BB, InsertPt);
     this->SetInstDebugLocation(I);
+
+//	errs()<<"\nInsert aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  \n";
+
+	//add by wb
+/*	if (I && curStmt){
+      		toStmtMap[I] = curStmt;
+    	}*/
+	
     return I;
   }
 
