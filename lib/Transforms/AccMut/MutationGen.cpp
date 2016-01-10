@@ -72,10 +72,11 @@ void MutationGen::genMutationFile(Function & F){
 				continue;
 			}
 
-			/*
+/*
+			// TODO::
 			bool onlyI32I64 = true;
 			for(unsigned i = 0; i < BI->getNumOperands(); i++){//only mutation for instructions with i32 or i64 operands
-				Type t = BI->getOpreand(i)->getType();
+				Type* t = BI->getOperand(i)->getType();
 				if( !(t->isIntegerTy(32) || t->isIntegerTy(64))){
 					onlyI32I64 = false;
 					break;
@@ -85,7 +86,7 @@ void MutationGen::genMutationFile(Function & F){
 			if(!onlyI32I64){
 				continue;
 			}
-			*/
+*/			
 			
 			genLVR(BI, F.getName(), index);
 			

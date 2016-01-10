@@ -28,10 +28,16 @@ public:
 	virtual bool runOnFunction(Function &F);
 	SMAInstrumenter(Module *M);
 private:	
-	void filtMutsByIndex(Function &F, vector<Mutation*>* v);
-	int instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts);
+	bool hasMutation(Instruction *I, vector<Mutation*>* v);
+	bool needInstrument(Instruction *I, vector<Mutation*>* v);
+	static void outputExpression(Instruction* inst);
+	static void outputMutation(Instruction *inst, vector<Mutation*>* v);
+	
+	void instrument(Function &F, vector<Mutation*> * v);
 	BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
 	Module *TheModule;
+	static ofstream  expr_os;
+	static ofstream  mut_os;
 };
 
 #endif

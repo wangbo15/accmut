@@ -24,7 +24,7 @@ void MutUtil::dumpAllMuts(){
 		for(vit = v->begin(); vit != v->end(); vit++){
 			Mutation *m = (*vit);
 			errs()<<"\tID: "<<m->id<<"\tTYPE: "<<m->type<<" \tFUNC: "<<m->func
-				<<"\tINDEX: "<<m->index<<'\n';
+				<<"\tINDEX: "<<m->index<<"\tS_OP: "<<m->src_op<<'\n';
 		}
 	}
 	errs()<<"--------------- END DUMP -----------------\n";
@@ -55,7 +55,8 @@ void MutUtil::getAllMutations(){
 	}
 	fin.close();
 	allMutsGeted = true;
-	//dumpAllMuts();
+	
+	dumpAllMuts();
 }
 
 Mutation *MutUtil::getMutation(string line){
@@ -101,7 +102,7 @@ Mutation *MutUtil::getMutation(string line){
 		ss>>sp;
 		ss>>colon;
 		ss>>tp;
-		ror->op = op;
+		ror->src_op = op;
 		ror->src_pre = sp;
 		ror->tar_pre = tp;
 		m = dyn_cast<Mutation>(ror);
@@ -113,7 +114,7 @@ Mutation *MutUtil::getMutation(string line){
 		ss>>op;
 		ss>>colon;
 		ss>>type;
-		std->op = op;
+		std->src_op = op;
 		std->func_ty = type;
 		m = dyn_cast<Mutation>(std);
 	}else if(mtype == "LVR"){
@@ -126,7 +127,7 @@ Mutation *MutUtil::getMutation(string line){
 		ss>>sc;
 		ss>>colon;
 		ss>>tc;
-		lvr->op = op;
+		lvr->src_op = op;
 		lvr->oper_index = oi;
 		lvr->src_const = sc;
 		lvr->tar_const = tc;

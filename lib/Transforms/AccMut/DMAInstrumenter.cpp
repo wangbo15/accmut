@@ -35,7 +35,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 		return false;
 	}
 	if(F.getName().equals("main")){
-		Function* finit = TheModule->getFunction("__accmut__init");
+		Function* finit = TheModule->getFunction("__accmut__dma_init");
 		if (!finit) {
 			std::vector<Type*>Fty_args;
  			FunctionType* Fty = FunctionType::get(Type::getVoidTy(TheModule->getContext()),
@@ -163,9 +163,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 		int_call_params.push_back(to_i32);
 		int_call_params.push_back(cur_it->getOperand(0));
 		int_call_params.push_back(cur_it->getOperand(1));
-		CallInst *call = CallInst::Create(f_process, int_call_params, 
-				"", cur_it);
-		
+		CallInst *call = CallInst::Create(f_process, int_call_params, "", cur_it);
 		CastInst* i32_conv = new TruncInst(call, IntegerType::get(TheModule->getContext(), 1), "");
 		insts++;
 		

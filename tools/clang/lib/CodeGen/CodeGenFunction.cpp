@@ -1826,8 +1826,8 @@ void CodeGenFunction::InsertHelper(llvm::Instruction *I,
                                    llvm::BasicBlock::iterator InsertPt) const {
 
 
-	llvm::errs()<<" ###################  InsertHelper";
-	llvm::errs()<<*I<<"\n";
+	//llvm::errs()<<" ###################  InsertHelper";
+	//llvm::errs()<<*I<<"\n";
 	if (I && curStmt){
       		toStmtMap[I] = curStmt;
     	}

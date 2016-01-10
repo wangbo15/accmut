@@ -614,7 +614,7 @@ extern int mutation_id;
 DMAInstrumenter *dmaInstru;
 #endif
 
-#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT
 SMAInstrumenter *smaInstruEval;
 #endif
 //-----------end-------------------

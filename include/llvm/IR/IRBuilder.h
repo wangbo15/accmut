@@ -596,8 +596,6 @@ public:
     this->InsertHelper(I, Name, BB, InsertPt);
     this->SetInstDebugLocation(I);
 
-//	errs()<<"\nInsert aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  \n";
-
 	//add by wb
 /*	if (I && curStmt){
       		toStmtMap[I] = curStmt;

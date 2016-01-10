@@ -35,6 +35,7 @@ public:
 	std::string func; 
 	int index;
 	std::string type;
+	int src_op;
 private:
 	MutationKind Kind;
 public:
@@ -47,7 +48,6 @@ public:
 //Arithmetic operator replacement : a + b ---> a - b
 class AORMut : public Mutation{
 public:
-	int src_op;
 	int tar_op;
 	AORMut() : Mutation(MK_AOR){}
 	static bool classof(const Mutation *M) {
@@ -60,7 +60,6 @@ public:
 //Logic Operator Replacement : a and b ---> a or b, a >> b ---> a << b
 class LORMut : public Mutation{
 public:
-	int src_op;
 	int tar_op;
 	LORMut() : Mutation(MK_LOR){}
 	static bool classof(const Mutation *M) {
@@ -82,7 +81,6 @@ public:
 //Relational Operator Replacement : (a == b) ---> (a >= b)
 class RORMut : public Mutation{
 public:
-	int op;
 	int src_pre;
 	int tar_pre;
 	RORMut() : Mutation(MK_ROR){}
@@ -105,7 +103,6 @@ public:
 //Statement Deletion Operator: Delete (omit) a single statement, foo(a,b) ---> <no-op>
 class STDMut : public Mutation{
 public:
-	int op;
 	int func_ty;
 	STDMut() : Mutation(MK_STD){}
 	static bool classof(const Mutation *M) {
@@ -116,7 +113,6 @@ public:
 //Literal Value Replacement : 0 ---> 1
 class LVRMut : public Mutation{
 public:
-	int op;
 	int oper_index;
 	int src_const;
 	int tar_const;
