@@ -193,7 +193,6 @@ bool SMAInstrumenter::runOnFunction(Function & F){
 }
 
 #elif ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT
-
 bool SMAInstrumenter::runOnFunction(Function & F){
 	if(F.getName().startswith("__accmut__")){
 		return false;
@@ -207,7 +206,7 @@ bool SMAInstrumenter::runOnFunction(Function & F){
 		return false;
 	}
 
-	errs()<<"######## SMA INSTRUMTNTING MUT  @"<<F.getName()<<"  ########\n";	
+	errs()<<"\n######## SMA INSTRUMTNTING MUT  @"<<F.getName()<<"  ########\n\n";	
 
 	instrument(F, v);
 
@@ -222,7 +221,8 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 	Function::iterator cur_bb;
 	BasicBlock::iterator cur_it;
 	
-	for(unsigned i = 0; i < v->size(); i++){		
+	for(unsigned i = 0; i < v->size(); i++){
+	
 		vector<Mutation*> tmp;
 		Mutation* m = (*v)[i];
 		tmp.push_back(m);		// TODO: remenber to free
@@ -237,9 +237,14 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				break;
 			}
 		}
-		
+
 		cur_it =  getLocation(F, instrumented_insts, tmp[0]->index);
+
+		errs()<<"MUT "<<tmp[0]->id<<" ~ "<<tmp[tmp.size()-1]->id<<
+			" @ "<<tmp[0]->index<<"\t"<<*cur_it<<"\n";
+			
 		cur_bb = cur_it->getParent();
+		
 		stringstream name;
 		name<<"FINAL_BB_OF_INST_"<<tmp[0]->index;
 
@@ -256,7 +261,7 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			name<<"M_BB_"<< tmp[j]->id;
 			Mut_BBs.push_back( BasicBlock::Create(F.getContext(),  name.str(), &F, FINAL_END ) );	 
 		}
-
+///
 		name.str("");
 		name<<"ORI_OF_INST_"<< tmp[0]->index;
 		BasicBlock *ORI_BB = BasicBlock::Create(F.getContext(), name.str(), &F, FINAL_END );
@@ -267,118 +272,153 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		LoadInst *Load_M_ID = new LoadInst(M_ID, "m_id.gv", cur_bb->getTerminator());
 				
 		cur_bb->back().eraseFromParent();
-
+		
 		//add switch
 		SwitchInst *SelectMuts =  SwitchInst::Create(Load_M_ID, ORI_BB, tmp.size(), cur_bb);
 		for(unsigned j = 0; j < Mut_BBs.size(); j++){
-			ConstantInt* Mut_ID_Const = ConstantInt::get(Type::getInt64Ty(F.getContext()), tmp[j]->id , true);
+			ConstantInt* Mut_ID_Const = ConstantInt::get(Type::getInt32Ty(F.getContext()), tmp[j]->id , true);
 			SelectMuts->addCase(Mut_ID_Const, Mut_BBs[j]);
 		}
 
 		instrumented_insts += 2; //
 
-		//create phi in final BB
-		PHINode *phi = PHINode::Create(cur_it->getType(), tmp.size()+1, "mut_phi");
+		if(cur_it->getType()->isVoidTy()){
 			
-		//instrument each mutation BB		
-		for(unsigned j = 0; j < tmp.size(); j++){
-			Mutation *m1 = tmp[j];
-			if(AORMut* aor = dyn_cast<AORMut>(m1)){
-				Instruction::BinaryOps opcode = Instruction::BinaryOps(aor->tar_op) ;	
-				name.str("");
-				name<<"aor_mut_"<<aor->id;				
-				Value *mut_inst = BinaryOperator::Create(opcode, cur_it->getOperand(0), cur_it->getOperand(1), name.str(), Mut_BBs[j]);
-				phi->addIncoming(mut_inst, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
-				BranchInst::Create(FINAL_END, Mut_BBs[j]);
-				instrumented_insts += 2;				
-			}else if(RORMut* ror = dyn_cast<RORMut>(m1)){
-				name.str("");
-				name<<"ror_mut_"<<ror->id;		
-				CmpInst::Predicate predicate = CmpInst::Predicate(ror->tar_pre);				
-				Value *mut_icmp = new ICmpInst(*Mut_BBs[j], predicate, cur_it->getOperand(0), cur_it->getOperand(1), name.str());
-				phi->addIncoming(mut_icmp, Mut_BBs[j]); 
-				BranchInst::Create(FINAL_END, Mut_BBs[j]);
-				instrumented_insts += 2;
-			}else if(LORMut* lor = dyn_cast<LORMut>(m1)){
-				Instruction::BinaryOps opcode = Instruction::BinaryOps(lor->tar_op) ;	
-				name.str("");
-				name<<"lor_mut_"<<lor->id;				
-				Value *mut_inst = BinaryOperator::Create(opcode, cur_it->getOperand(0), cur_it->getOperand(1), name.str(), Mut_BBs[j]);
-				phi->addIncoming(mut_inst, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
-				BranchInst::Create(FINAL_END, Mut_BBs[j]);
-				instrumented_insts += 2;						
-			}else if(LVRMut *lvr = dyn_cast<LVRMut>(m1)){
-				name.str("");
-				name<<"lvr_mut_"<<lvr->id;
-				Value *cons_change = ConstantInt::get( cur_it->getOperand(lvr->oper_index)->getType() , lvr->tar_const); 
-				Instruction *mut_inst = cur_it->clone();	
-				mut_inst->setName(name.str());
-				mut_inst->setOperand(lvr->oper_index, cons_change);
-				Mut_BBs[j]->getInstList().push_front(mut_inst);
-				phi->addIncoming(mut_inst, Mut_BBs[j]); 
-				BranchInst::Create(FINAL_END, Mut_BBs[j]);
-				instrumented_insts += 2;
-			}else if(STDMut* std = dyn_cast<STDMut>(m1)){
-				name.str("");
-				name<<"std_mut_"<<std->id;		
-				Function *f;
-				Type* ori_ty = cur_it->getType();
-				if(ori_ty->isIntegerTy(32)){
-					f = TheModule->getFunction("__accmut__process_call_i32");	
-					vector<Value*> call_params;
-					CallInst* call = CallInst::Create(f, call_params, name.str(), Mut_BBs[j]);
-					call->setCallingConv(CallingConv::C);
-					call->setTailCall(false);
-					AttributeSet attr;			
-					call->setAttributes(attr);
-					phi->addIncoming(call, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
-					BranchInst::Create(FINAL_END, Mut_BBs[j]);
-					instrumented_insts += 2;		
-				}else if(ori_ty->isVoidTy()){
+			for(unsigned j = 0; j < tmp.size(); j++){
+				Mutation *m1 = tmp[j];
+				if(LVRMut *lvr = dyn_cast<LVRMut>(m1)){
+					name.str("");
+					name<<"lvr_mut_"<<lvr->id;
+					Value *cons_change = ConstantInt::get( cur_it->getOperand(lvr->oper_index)->getType() , lvr->tar_const); 
+					Instruction *mut_inst = cur_it->clone();	
+					//mut_inst->setName(name.str()); 	//BUG HERE, can not set name to void type !!
+					mut_inst->setOperand(lvr->oper_index, cons_change);
+					Mut_BBs[j]->getInstList().push_front(mut_inst);
+					BranchInst::Create(FINAL_END, Mut_BBs[j]);				
+					instrumented_insts += 2;
+				}else if(STDMut* std = dyn_cast<STDMut>(m1)){	
+					Function *f;
 					f = TheModule->getFunction("__accmut__process_call_void");	
 					vector<Value*> call_params;
-					CallInst* call = CallInst::Create(f, call_params, name.str(), Mut_BBs[j]);
+					CallInst* call = CallInst::Create(f, call_params, "", Mut_BBs[j]);
 					call->setCallingConv(CallingConv::C);
 					call->setTailCall(false);
 					AttributeSet attr;			
 					call->setAttributes(attr);		
+					BranchInst::Create(FINAL_END, Mut_BBs[j]);
+					instrumented_insts += 2;
+				}else{
+					errs()<<"MUTATION TYPE ERR @ SMAInstrumenter::instrument() \n";
+					exit(0);
+				}							
+			}
+			//instrument origin bb
+			Instruction *ori_inst = cur_it->clone();	
+			name.str("");
+			name<<"ori_inst";		
+			//ori_inst->setName(name.str());  //BUG HERE, can not set name to void type !!
+			
+			ORI_BB->getInstList().push_front(ori_inst);		// TODO:: why needn't setParent() ??		
+			BranchInst::Create(FINAL_END, ORI_BB);
+			instrumented_insts += 2;
+			
+		}else{
+		
+			//create phi in final BB
+			PHINode *phi = PHINode::Create(cur_it->getType(), tmp.size()+1, "mut_phi");// TODO:: STD for void 
+
+			//instrument each mutation BB		
+			for(unsigned j = 0; j < tmp.size(); j++){
+				Mutation *m1 = tmp[j];
+
+				if(AORMut* aor = dyn_cast<AORMut>(m1)){
+					Instruction::BinaryOps opcode = Instruction::BinaryOps(aor->tar_op) ;	
+					name.str("");
+					name<<"aor_mut_"<<aor->id;				
+					Value *mut_inst = BinaryOperator::Create(opcode, cur_it->getOperand(0), cur_it->getOperand(1), name.str(), Mut_BBs[j]);
+					phi->addIncoming(mut_inst, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
+					BranchInst::Create(FINAL_END, Mut_BBs[j]);
+					instrumented_insts += 2;				
+				}else if(RORMut* ror = dyn_cast<RORMut>(m1)){
+					name.str("");
+					name<<"ror_mut_"<<ror->id;		
+					CmpInst::Predicate predicate = CmpInst::Predicate(ror->tar_pre);				
+					Value *mut_icmp = new ICmpInst(*Mut_BBs[j], predicate, cur_it->getOperand(0), cur_it->getOperand(1), name.str());
+					phi->addIncoming(mut_icmp, Mut_BBs[j]); 
+					BranchInst::Create(FINAL_END, Mut_BBs[j]);
+					instrumented_insts += 2;
+				}else if(LORMut* lor = dyn_cast<LORMut>(m1)){
+					Instruction::BinaryOps opcode = Instruction::BinaryOps(lor->tar_op) ;	
+					name.str("");
+					name<<"lor_mut_"<<lor->id;				
+					Value *mut_inst = BinaryOperator::Create(opcode, cur_it->getOperand(0), cur_it->getOperand(1), name.str(), Mut_BBs[j]);
+					phi->addIncoming(mut_inst, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
 					BranchInst::Create(FINAL_END, Mut_BBs[j]);
 					instrumented_insts += 2;						
-				}else if(ori_ty->isIntegerTy(64)){
-					f = TheModule->getFunction("__accmut__process_call_i64");
-					vector<Value*> call_params;					
-					CallInst* call = CallInst::Create(f, call_params, name.str(), Mut_BBs[j]);
-					call->setCallingConv(CallingConv::C);
-					call->setTailCall(false);
-					AttributeSet attr;			
-					call->setAttributes(attr);		
-					phi->addIncoming(call, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
+				}else if(LVRMut *lvr = dyn_cast<LVRMut>(m1)){
+					name.str("");
+					name<<"lvr_mut_"<<lvr->id;					
+					Value *cons_change = ConstantInt::get( cur_it->getOperand(lvr->oper_index)->getType() , lvr->tar_const); 
+					Instruction *mut_inst = cur_it->clone();	
+					mut_inst->setName(name.str());
+					mut_inst->setOperand(lvr->oper_index, cons_change);
+					Mut_BBs[j]->getInstList().push_front(mut_inst);
+					phi->addIncoming(mut_inst, Mut_BBs[j]); 
 					BranchInst::Create(FINAL_END, Mut_BBs[j]);
-					instrumented_insts += 2;	
+					instrumented_insts += 2;
+				}else if(STDMut* std = dyn_cast<STDMut>(m1)){
+					name.str("");
+					name<<"std_mut_"<<std->id;		
+					Function *f;
+					Type* ori_ty = cur_it->getType();
+					if(ori_ty->isIntegerTy(32)){
+						f = TheModule->getFunction("__accmut__process_call_i32");	
+						vector<Value*> call_params;
+						CallInst* call = CallInst::Create(f, call_params, name.str(), Mut_BBs[j]);
+						call->setCallingConv(CallingConv::C);
+						call->setTailCall(false);
+						AttributeSet attr;			
+						call->setAttributes(attr);
+						phi->addIncoming(call, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
+						BranchInst::Create(FINAL_END, Mut_BBs[j]);
+						instrumented_insts += 2;		
+					}else if(ori_ty->isIntegerTy(64)){
+						f = TheModule->getFunction("__accmut__process_call_i64");
+						vector<Value*> call_params;					
+						CallInst* call = CallInst::Create(f, call_params, name.str(), Mut_BBs[j]);
+						call->setCallingConv(CallingConv::C);
+						call->setTailCall(false);
+						AttributeSet attr;			
+						call->setAttributes(attr);		
+						phi->addIncoming(call, Mut_BBs[j]); 	// TODO::check the upper limit of phinode
+						BranchInst::Create(FINAL_END, Mut_BBs[j]);
+						instrumented_insts += 2;	
+					}else{
+						llvm::errs()<<"TYPE ERROR @ SMAInstrumenter::instrument() CallInst\n";			
+						exit(0);
+					}			
 				}else{
-					llvm::errs()<<"TYPE ERROR @ SMAInstrumenter::instrument() CallInst\n";			
+					errs()<<"MUTATION TYPE ERR @ SMAInstrumenter::instrument() \n";
 					exit(0);
 				}			
-			}else{
-				errs()<<"MUTATION TYPE ERR @ SMAInstrumenter::instrument() \n";
-				exit(0);
-			}			
-		}
+			}
 
-		//instrument origin bb
-		Instruction *ori_inst = cur_it->clone();	
-		name.str("");
-		name<<"ori_inst";		
-		ori_inst->setName(name.str());
-		phi->addIncoming(ori_inst, ORI_BB);
-		ORI_BB->getInstList().push_front(ori_inst);		// TODO:: why needn't setParent() ??		
-		BranchInst::Create(FINAL_END, ORI_BB);
-		instrumented_insts += 2;
+			//instrument origin bb
+			Instruction *ori_inst = cur_it->clone();	
+			name.str("");
+			name<<"ori_inst";		
+			ori_inst->setName(name.str());
+			
+			phi->addIncoming(ori_inst, ORI_BB);
+			ORI_BB->getInstList().push_front(ori_inst);		// TODO:: why needn't setParent() ??		
+			BranchInst::Create(FINAL_END, ORI_BB);
+			instrumented_insts += 2;
 
-		//modify the final BB
-		ReplaceInstWithInst(cur_it, phi);
-
+			//modify the final BB
+			ReplaceInstWithInst(cur_it, phi);
+		}//end of if( cur_it->getType()->isVoidType() ) else
 	}
+	
 }
 
 

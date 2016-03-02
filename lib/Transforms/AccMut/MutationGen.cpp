@@ -68,7 +68,11 @@ void MutationGen::genMutationFile(Function & F){
 
 			unsigned opc = BI->getOpcode();
 
-			if(opc == 32){// omit ALLOCA		
+			if( !((opc >= 14 && opc <= 31) || opc == 34 || opc == 52 || opc == 55) ){// omit alloca and getelementptr		
+				continue;
+			}
+			/**************************/
+			if(opc == 55){		// TODO:: disable STD first
 				continue;
 			}
 

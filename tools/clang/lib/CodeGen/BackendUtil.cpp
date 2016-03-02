@@ -57,7 +57,7 @@
 #include "llvm/Transforms/AccMut/DMAInstrumenter.h"
 #endif
 
-#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 #include "llvm/Transforms/AccMut/SMAInstrumenter.h"
 #endif
 
@@ -614,7 +614,7 @@ extern int mutation_id;
 DMAInstrumenter *dmaInstru;
 #endif
 
-#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT
+#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 SMAInstrumenter *smaInstruEval;
 #endif
 //-----------end-------------------
@@ -674,7 +674,7 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 		PerFunctionPasses->add(dmaInstru);
 	#endif
 
-	#if ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL
+	#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 		smaInstruEval = new SMAInstrumenter(TheModule);
 		PerFunctionPasses->add(smaInstruEval);
 	#endif

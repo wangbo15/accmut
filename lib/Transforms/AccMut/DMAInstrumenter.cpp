@@ -34,7 +34,8 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 	if(F.getName().startswith("__accmut__")){
 		return false;
 	}
-	if(F.getName().equals("main")){
+	if(F.getName().equals("main") ){ 	// || !F.getName().equals("numeric_case")
+		/*
 		Function* finit = TheModule->getFunction("__accmut__dma_init");
 		if (!finit) {
 			std::vector<Type*>Fty_args;
@@ -43,7 +44,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 			finit = Function::Create(
 			 	Fty,	//Type
 				 GlobalValue::ExternalLinkage,	//Linkage
-				 "__accmut__init",	//Name
+				 "__accmut__dma_init",	//Name
 				 TheModule); 
 			finit->setCallingConv(CallingConv::C);
 		}
@@ -53,7 +54,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 		call_init->setTailCall(false);
 		AttributeSet call_init_PAL;
 		call_init->setAttributes(call_init_PAL);
-		
+		*/
 		return true;
 	}
 	
@@ -66,7 +67,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 }
 
 void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
-	errs()<<"===  DMA INSTRUMENTING "<<F.getName()<<"  =====\n";
+	errs()<<"======  DMA INSTRUMENTING "<<F.getName()<<"()  ========\n";
 		
 	std::vector<Mutation*>::iterator cur_mut = v->begin();
 	std::vector<Mutation*>::iterator beg = cur_mut;
@@ -75,25 +76,25 @@ void DMAInstrumenter::filtMutsByIndex(Function &F, vector<Mutation*>* v){
 
 	while(cur_mut != v->end()){//find a mutations' interval of the vector
 		if((*cur_mut)->index != (*beg)->index){
-			//errs()<<"IR "<<(*beg)->index<<" : mut "<<(*beg)->id<<" ~~ mut "<<(*(cur_mut-1))->id<<"\n";
-			//			errs()<<" II : "<<instrumented_insts<<"\n";
+			errs()<<"IR "<<(*beg)->index<<" : mut "<<(*beg)->id<<" ~~ mut "<<(*(cur_mut-1))->id<<"\n";
+						errs()<<" II : "<<instrumented_insts<<"\n";
 
 			int insts = instrument(F, (*beg)->index, (*beg)->id, (*(cur_mut-1))->id, instrumented_insts);
 			instrumented_insts+=insts;
 
-			//errs()<<" III : "<<instrumented_insts<<"\n";
+			errs()<<" III : "<<instrumented_insts<<"\n";
 
 			beg = cur_mut;
 			continue;
 		}
 		if(cur_mut == (v->end() -1)){
-			//errs()<<(*beg)->index<<" : "<<(*beg)->id<<"~"<<(*cur_mut)->id<<"\n";
-			//			errs()<<" II : "<<instrumented_insts<<"\n";
+			errs()<<(*beg)->index<<" : "<<(*beg)->id<<"~"<<(*cur_mut)->id<<"\n";
+						errs()<<" II : "<<instrumented_insts<<"\n";
 
 			int insts = instrument(F, (*beg)->index, (*beg)->id, (*cur_mut)->id, instrumented_insts);
 			instrumented_insts+=insts;
 			
-			//errs()<<" III : "<<instrumented_insts<<"\n";
+			errs()<<" III : "<<instrumented_insts<<"\n";
 		}
 		cur_mut++;
 	}
@@ -107,7 +108,7 @@ int DMAInstrumenter::instrument(Function &F, int index, int mut_from, int mut_to
 	
 	BasicBlock::iterator cur_it = MutUtil::getLocation(F, instrumented_insts, index);
 	//Function::iterator cur_bb = cur_it->getParent();
-
+	errs()<<"INDEX : "<<index<<"  INSTED : "<<instrumented_insts<<"\n";
 	errs()<<" 	instrumenting this IR >>>> ";
 	cur_it->dump();
 

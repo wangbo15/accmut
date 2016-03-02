@@ -145,9 +145,11 @@ Mutation *MutUtil::getMutation(string line){
 
 BasicBlock::iterator MutUtil::getLocation(Function &F, int instrumented_insts, int index){
 	int cur = 0;
+	//errs()<<"GETLOCATION : "<<instrumented_insts<<"    "<<index<<"\n";
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
 		BasicBlock *BB = FI;
 		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, cur++){
+			//errs()<<"\t"<<" CUR: "<<cur<<*BI<<"\n";
 			if(index + instrumented_insts == cur ){
 				return BI;
 			}
