@@ -8,6 +8,23 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+
+
+#define ACCMUT_GEN_MUT 0
+
+//SWITCH FOR MUTATION SCHEMATA
+#define ACCMUT_MUTATION_SCHEMATA 0
+
+//SWITCH FOR STATIC ANALYSIS
+#define ACCMUT_STATIC_ANALYSIS_EVAL 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
+
+//SWITCH FOR DYNAMIC ANALYSIS
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+
+
+
 /*************************************************/
 
 const char PROJECT[]="printtokens";
@@ -42,18 +59,6 @@ void __accmut__setout(int id){
 		fprintf(stderr, "STDOUT REDIR ERR! : %s\n", path);
 	}
 }
-
-
-
-#define ACCMUT_GEN_MUT 0
-//SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 0
-//SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
-//SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 /****************************/
