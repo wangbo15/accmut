@@ -1,5 +1,5 @@
-#ifndef ACCMUT_MUT_H
-#define ACCMUT_MUT_H
+#ifndef ACCMUT_MUT_CONFIG_H
+#define ACCMUT_MUT_CONFIG_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,10 +18,10 @@
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 
@@ -35,15 +35,15 @@ int TEST_ID = -1;
 //TODO: REAL OR PROF
 struct itimerval tick;
 const long VALUE_SEC = 0;
-const long VALUE_USEC = 2000;
+const long VALUE_USEC = 1000;
 const long INTTERVAL_SEC = 0;
 const long INTTERVAL_USEC = 50;
 
 /*************************************************/
 
 
-void __accmut_handler(int sig){
-    fprintf(stdout, "MUT %d TIME OUT!\n", MUTATION_ID);
+void __accmut__handler(int sig){
+    fprintf(stderr, "MUT %d TIME OUT!\n", MUTATION_ID);	// TODO::stdout or stderr
     exit(0);
 }
 
@@ -64,7 +64,7 @@ void __accmut__setout(int id){
 /****************************/
 
 #if ACCMUT_MUTATION_SCHEMATA
-	#include<accmut/accmut_sche.h>
+	#include<accmut/accmut_schem.h>
 #endif
 
 /****************************/

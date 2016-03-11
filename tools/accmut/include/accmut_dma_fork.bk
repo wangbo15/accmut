@@ -45,8 +45,8 @@ typedef struct Mutation{
 Mutation* ALLMUTS[MAXMUTNUM + 1];
 
 
-/** Added By Shiyqw **/
 
+/** Added By Shiyqw **/
 int forked_active_set[21]; 
 int forked_active_num;
 int default_active_set[MAXMUTNUM + 1];
@@ -64,6 +64,17 @@ Eqclass eqclass[21];
 int eq_num;
 
 // Algorithms for Dynamic mutation anaylsis 
+
+void __accmut__setout(int id){
+	char path[100];
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/tmp/accmut/output/printtokens/t");
+	sprintf(path, "%s%d_%d", path, TEST_ID, id);
+	//printf("PATH : %s\n", path);
+	if (freopen(path, "w", stdout)==NULL){
+		fprintf(stderr, "STDOUT REDIR ERR! : %s\n", path);
+	}
+}
 
 void __accmut__filter__variant(int from, int to) {
     recent_num = 0;
@@ -85,24 +96,37 @@ void __accmut__filter__variant(int from, int to) {
             recent_set[recent_num++] = 0;
         }
     }
-
+   // printf("FILTER VARIANTS END, RESULT IS:\n");
+   // for(i = 0; i < recent_num; ++i) {
+   //     printf("%d ", recent_set[i]);
+   // }
+   // printf("\n");
 }
-//
+
 
 void __accmut__divide__eqclass() {
     eq_num = 0;
     int i;
+    //printf("RESULT OF CALCULATION:\n");
+    //for(i = 0; i < recent_num; ++i) {
+    //    printf("%ld ", temp_result[i]);
+    //}
+    //printf("\n");
+    //for(i = 0; i < recent_num; ++i) {
+    //    printf("%d ", recent_set[i]);
+    //}
+    //printf("\n");
     for(i = 0; i < recent_num; ++i) {
         long result = temp_result[i];
         int j;
         int flag = 0;
-        //for(j = 0; j < eq_num; ++j) {
-            //if(eqclass[j].value == result) {
-                //eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
-                //flag = 1;
-                //break;
-            //}
-        //}
+        for(j = 0; j < eq_num; ++j) {	//TODO:
+            if(eqclass[j].value == result) {
+                eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
+                flag = 1;
+                break;
+            }
+        }
         if (flag == 0) {
             eqclass[eq_num].value = result;
             eqclass[eq_num].num = 1;
@@ -110,6 +134,11 @@ void __accmut__divide__eqclass() {
             ++eq_num;
         }
     }
+    //printf("RESULT OF DIVISION:\n");
+    //for(i = 0; i < eq_num; ++i) {
+    //    printf("%d ", eqclass[i].mut_id[0]);
+    //}
+    //printf("\n");
 }
 
 void __accmut__filter__mutants(int from, int to, int classid) {
@@ -149,9 +178,6 @@ long __accmut__fork__eqclass(int from, int to) {
              int r = setitimer(ITIMER_PROF, &tick, NULL); //  发送信号
              __accmut__filter__mutants(from, to, i);
              MUTATION_ID = eqclass[i].mut_id[0];
-
-             //printf("%d\t%d\n", TEST_ID, MUTATION_ID);
-
              return eqclass[i].value;
          } else {
              fflush(stdout);
@@ -164,24 +190,22 @@ long __accmut__fork__eqclass(int from, int to) {
 }
 
 
+
 /** End Added **/
 
-void __accmut__init(){
+void __accmut__dma_fork_init(){
 
-    tick.it_value.tv_sec = VALUE_SEC;  // sec
-    tick.it_value.tv_usec = VALUE_USEC; // u sec.
-    tick.it_interval.tv_sec = INTTERVAL_SEC;
-    tick.it_interval.tv_usec =  INTTERVAL_USEC;
-
-	//perror("######### INIT START ####\n");
+	//fprintf(stderr, "######### INIT START ####\n");
     
-    signal(SIGPROF, __accmut__handler); 
-    char path[100];
-    strcpy(path, getenv("HOME"));
-    strcat(path, "/tmp/accmut/mutations.txt");
+
+
+    signal(SIGPROF, __accmut_handler);  //把时钟信号的处理函数转成我们的，让该进程exit()；
+	char path[100];
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
 	if(fp == NULL){
-		perror("FILE ERROR: mutation.txt CAN NOT OPEN !!!\n");
+		fprintf(stderr, "FILE ERROR: mutation.txt can not open !!!\n");
 		exit(0);
 	}
 	int id;	
@@ -222,6 +246,7 @@ void __accmut__init(){
 			m->f_tp=f_tp;
 		}else if(!strcmp(type, "LVR")){
 			m->type = LVR;
+            //printf("in lvr %d\n", id);
 			int op, op_i;
 			long s_c, t_c;
 			sscanf(tail, "%d:%d:%ld:%ld", &op, &op_i, &s_c, &t_c);
@@ -234,10 +259,18 @@ void __accmut__init(){
 		ALLMUTS[id] = m;
 	}
 
+	//printf("######### INIT END1 ####\n");
     int i;
     for(i = 0; i <= MAXMUTNUM; ++i) default_active_set[i] = 1;
 
-	//perror("######### INIT END ####\n");
+	//fprintf(stderr, "######### INIT END ####\n");
+	
+	//__accmut__setout(0);
+}
+
+int __accmut__state_changed(){
+	
+	return 0;
 }
 
 //////
@@ -272,7 +305,7 @@ int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 		case 30: return a | b;
 		case 31: return a ^ b;
 		default:
-			perror("ERROR : __accmut__cal_i32_arith !!!\n");
+			fprintf(stderr, "ERROR : __accmut__cal_i32_arith !!!\n");
 			exit(0);
 	}
 }
@@ -293,16 +326,20 @@ long __accmut__cal_i64_arith(int op, long a, long b){// TODO:: add float point
 		case 30: return a | b;
 		case 31: return a ^ b;
 		default:
-			perror("ERROR : __accmut__cal_i64_arith !!!\n");
+			fprintf(stderr, "ERROR : __accmut__cal_i64_arith !!!\n");
 			exit(0);
 	}
 }
 
-
 int __accmut__process_i32_arith(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->op , left, right);
+    //if(to == 47) return ori;
     
     __accmut__filter__variant(from, to);
+
+    if(recent_num == 1) {
+        return ori;
+    }
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -321,19 +358,11 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
         }
     }
 
-    if(recent_num == 1) {
-        if(MUTATION_ID < from || MUTATION_ID > to) {
-            return ori;
-        }
-        return temp_result[0];
-    }
-
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
     return result;
-
 }
 
 long __accmut__process_i64_arith(int from, int to, long left, long right){
@@ -342,6 +371,9 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 
     __accmut__filter__variant(from, to);
 
+    if(recent_num == 1) {
+        return ori;
+    }
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -360,12 +392,6 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
         }
     }
 
-    if(recent_num == 1) {
-        if(MUTATION_ID < from || MUTATION_ID > to) {
-            return ori;
-        }
-        return temp_result[0];
-    }
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
@@ -413,9 +439,13 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre , left, right);
+    //if(to == 47) return ori;
     
     __accmut__filter__variant(from, to);
 
+    if(recent_num == 1) {
+        return ori;
+    }
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -424,25 +454,19 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
         } else if (ALLMUTS[recent_set[i]]->type == LVR) {
             int pre = ALLMUTS[to]->s_pre;
             int t_con = ALLMUTS[recent_set[i]]->t_con;
-            if(ALLMUTS[recent_set[i]]->op_index == 0) {
+            if(ALLMUTS[recent_set[1]]->op_index == 0) {
                 temp_result[i] = __accmut__cal_i32_bool(pre, t_con, right);
             } else {
                 temp_result[i] = __accmut__cal_i32_bool(pre, left, t_con);
             }
         } else {
+            //printf("pre is %d\n", ALLMUTS[recent_sIet[i]]->s_pre);
             temp_result[i] = __accmut__cal_i32_bool(ALLMUTS[recent_set[i]]->t_pre, left, right);
         }
-    }
-    if(recent_num == 1) {
-        if(MUTATION_ID < from || MUTATION_ID > to) {
-            return ori;
-        }
-        return temp_result[0];
     }
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
-    //int result = ori;
     int result = __accmut__fork__eqclass(from, to);
     return result;
 }
@@ -452,6 +476,9 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 
     __accmut__filter__variant(from, to);
 
+    if(recent_num == 1) {
+        return ori;
+    }
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -470,12 +497,6 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
         }
     }
 
-    if(recent_num == 1) {
-        if(MUTATION_ID < from || MUTATION_ID > to) {
-            return ori;
-        }
-        return temp_result[0];
-    }
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
@@ -488,6 +509,9 @@ void __accmut__process_st_i32(int from, int to, int *addr){
 
     __accmut__filter__variant(from, to);
 
+    if(recent_num == 1) {
+        return;
+    }
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -499,20 +523,16 @@ void __accmut__process_st_i32(int from, int to, int *addr){
         }
     }
 
-    if(recent_num == 1) {
-        if(MUTATION_ID < from || MUTATION_ID > to) {
-            *addr = ori;
-            return;
-        }
-        *addr = temp_result[0];
-        return;
-    }
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
 	//orig	
 	*addr = result;
+/*	int i;
+	for(i = from; i <= to; i++){
+			
+	}*/
 }
 
 void __accmut__process_st_i64(int from, int to, long *addr){
@@ -540,6 +560,23 @@ void __accmut__process_st_i64(int from, int to, long *addr){
     long result = __accmut__fork__eqclass(from, to);
 	//orig	
 	*addr = result;
+	/*int i;
+	for(i = from; i <= to; i++){
+			
+	}*/
 }
+
+/*
+int main(){
+	__accmut__init();
+	int i;
+	for(i = 1; i < MAXMUTNUM+1; i++){
+		if(ALLMUTS[i] != NULL ){
+			printf("%d-%d\n", i, ALLMUTS[i]->op);
+		}
+	}
+	return 0;
+}
+*/
 
 #endif

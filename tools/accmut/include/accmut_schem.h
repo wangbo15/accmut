@@ -1,5 +1,5 @@
-#ifndef ACCMUT_SMA_CALLFORK_H
-#define ACCMUT_SMA_CALLFORK_H
+#ifndef ACCMUT_SMA_SCHEM_H
+#define ACCMUT_SMA_SCHEM_H
 
 #include<stdlib.h>
 #include<string.h>
@@ -48,7 +48,7 @@ Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MAX_MUT_NUM;
 int *MUTS_ON;
 
-//int totalfork = 0;
+int totalfork = 0;
 
 
 int forked_active_set[21]; 
@@ -92,7 +92,7 @@ void __accmut__mainfork(int id){
 				exit(0);
 			}
 		}else{//father process	
-			//totalfork++;
+			totalfork++;
 			int pr = waitpid(pid, NULL, 0);
 			if(pr < 0){
 				fprintf(stderr, "WAITPID ERROR\n");
@@ -109,7 +109,7 @@ void __accmut__init(){
     tick.it_interval.tv_sec = INTTERVAL_SEC;
     tick.it_interval.tv_usec =  INTTERVAL_USEC;
 
-    signal(SIGPROF, __accmut_handler);
+    signal(SIGPROF, __accmut__handler);
     
 	char path[100];
 	strcpy(path, getenv("HOME"));
@@ -169,11 +169,7 @@ void __accmut__init(){
 		}	
 		ALLMUTS[id] = m;
 	}
-/*
-	int j;
-	for(j = 1; j <= MAX_MUT_NUM; j++){
-		fprintf(stderr, "%d: \n", ALLMUTS[j]->);
-	}*/
+
 
 
 	if(TEST_ID < 0){
@@ -196,6 +192,7 @@ void __accmut__init(){
 		*(MUTS_ON + i) = 1;
 	}
 	
+	/*
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/input/printtokens/t");
 	sprintf(path, "%s%d", path, TEST_ID);
@@ -214,6 +211,7 @@ void __accmut__init(){
 			}				                	            
     }
     fclose(fp);
+    */
     
    	for(i = 1; i < MAX_MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
