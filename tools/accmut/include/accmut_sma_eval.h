@@ -248,16 +248,16 @@ void __accmut__init(){
             exps[rid].isTop = 0;
         }
     }
-    /*
-    fprintf(stderr, "---------------- DUMP INIT ------------\n");
-    for(i = 1; i <= EXP_COUNT; ++i) {
-        fprintf(stderr, "EXPR: %d %c %d %d %d \n", exps[i].id, exps[i].type, exps[i].op, exps[i].larg, exps[i].rarg); 
-    }
-    for(i = 1; i <= MUT_COUNT; ++i) {
-        fprintf(stderr, "MUT: %d %d %s %d %d %d\n", muts[i].exp, muts[i].id, muts[i].type, muts[i].src, muts[i].tar, muts[i].index);
-    }
-    fprintf(stderr, "EXP_COUNT: %d MID_CNT: %d\n", EXP_COUNT, MUT_COUNT);
-    fprintf(stderr, "---------------- DUMP INIT END ------------\n");*/
+    
+    // fprintf(stderr, "---------------- DUMP INIT ------------\n");
+    // for(i = 1; i <= EXP_COUNT; ++i) {
+    //     fprintf(stderr, "EXPR: %d %c %d %d %d \n", exps[i].id, exps[i].type, exps[i].op, exps[i].larg, exps[i].rarg); 
+    // }
+    // for(i = 1; i <= MUT_COUNT; ++i) {
+    //     fprintf(stderr, "MUT: %d %d %s %d %d %d\n", muts[i].exp, muts[i].id, muts[i].type, muts[i].src, muts[i].tar, muts[i].index);
+    // }
+    // fprintf(stderr, "EXP_COUNT: %d MID_CNT: %d\n", EXP_COUNT, MUT_COUNT);
+    // fprintf(stderr, "---------------- DUMP INIT END ------------\n");
 }
 
 int __accmut__equal_mut(mid1, mid2){

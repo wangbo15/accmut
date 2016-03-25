@@ -50,25 +50,6 @@ int *MUTS_ON;
 
 int totalfork = 0;
 
-
-int forked_active_set[21]; 
-int forked_active_num;
-int default_active_set[MAXMUTNUM + 1];
-int recent_set[21];
-int recent_num;
-long temp_result[21];
-
-typedef struct Eqclass {
-    long value;
-    int num;
-    int mut_id[21];
-} Eqclass;
-
-Eqclass eqclass[21];
-int eq_num;
-
-// Algorithms for Dynamic mutation anaylsis 
-
 void __accmut__mainfork(int id){
 		
 	if(MUTATION_ID == 0 && MUTS_ON[id]){
@@ -83,7 +64,7 @@ void __accmut__mainfork(int id){
 			MUTATION_ID = id;
 			
 			//TODO : set_out
-			__accmut__setout(id);
+			//__accmut__setout(id);
 			
 			int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
 			
@@ -94,8 +75,12 @@ void __accmut__mainfork(int id){
 		}else{//father process	
 			totalfork++;
 			int pr = waitpid(pid, NULL, 0);
+
+			//perror("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+			//__accmut__bufferdump();
+
 			if(pr < 0){
-				fprintf(stderr, "WAITPID ERROR\n");
+				fprintf(stderr, "WAITPID ERROR !!!!!!\n");
 			}			
 		}
 	}
@@ -191,35 +176,35 @@ void __accmut__init(){
 	for(i = 0; i < MAX_MUT_NUM + 1; i++){
 		*(MUTS_ON + i) = 1;
 	}
-	
-	/*
-	strcpy(path, getenv("HOME"));
-	strcat(path, "/tmp/accmut/input/printtokens/t");
-	sprintf(path, "%s%d", path, TEST_ID);
-	
-	//fprintf(stderr, "PATH : %s\n", path);
-	
-	fp = fopen(path, "r");
-	
-	int curmut, on_id;
-	int killed = 0;
-	while(fscanf(fp,"%d:%d", &curmut, &on_id) != EOF){
-			if(curmut != on_id){
-				//fprintf(stderr,"CURMUT: %d, ON_ID: %d\n", curmut, on_id);
-				*(MUTS_ON + curmut) = 0;
-				killed++;
-			}				                	            
-    }
-    fclose(fp);
-    */
     
    	for(i = 1; i < MAX_MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
 	}
 	
+
 	/*if(MUTATION_ID == 0){
 		fprintf(stderr, "%d\n",	totalfork);
 	}*/
+
+/*BUFFER ERROR
+	pid_t pid = fork();
+	
+	if(pid < 0){
+		fprintf(stderr, "FORK ERR!\n");
+		exit(0);
+	}else if(pid == 0){//child process
+		
+	}else{//father process	
+		
+		int pr = waitpid(pid, NULL, 0);
+
+		if(pr < 0){
+			fprintf(stderr, "WAITPID ERROR !!!!!!\n");
+		}			
+	}
+
+	fprintf(stderr, "~~~~~~~~~~~~~ MID : %d ~~~~~~~~~~~~~~~~~\n", MUTATION_ID);
+*/
 }
 
 //////
@@ -353,11 +338,16 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 }
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
+
+	//fprintf(stderr, "MID : %d\n", MUTATION_ID);
 	
 	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
 		//fprintf(stderr, "F: %d, T: %d M: %d --------1\n", from, to, MUTATION_ID);
 		//fprintf(stderr, "%d \n", ALLMUTS[to]->s_pre);
 		int ori = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre , left, right);	
+
+		// fprintf(stderr, "ORI : %d  %d  %d  %d  %d\n", ori, ALLMUTS[to]->s_pre,
+		// 		 ALLMUTS[to]->t_pre, left, right);
 		return ori;
 	}
 	
@@ -368,6 +358,10 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 		//fprintf(stderr, "F: %d, T: %d M: %d --------2\n", from, to, MUTATION_ID);
 		mut_res = __accmut__cal_i32_bool(m->t_pre, left, right);
 		
+
+		// fprintf(stderr, "RES : %d  %d  %d  %d  %d\n", mut_res, ALLMUTS[to]->s_pre,
+		// 		 m->t_pre, left, right);
+
 	}else if(m->type == LVR){
 	
 		if(m->op_index == 0){

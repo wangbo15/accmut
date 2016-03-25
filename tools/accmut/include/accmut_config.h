@@ -18,22 +18,28 @@
 #define ACCMUT_GEN_MUT 0
 
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 1
+#define ACCMUT_MUTATION_SCHEMATA 0
 
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 
 
 /*************************************************/
 
+//4M buffer 
+#define MAXBUFFERSIZE 1<<22
+
+/*************************************************/
+
+
 const char PROJECT[]="printtokens";
-const char ORACLEDIR[] = "/home/nightwish/workspace/testing/accmut/printtokens/oricle/";
+const char ORACLEDIR[] = "/home/nightwish/workspace/testing/accmut/printtokens/oracle/";
 int MUTATION_ID = 0;
 int TEST_ID = -1;
 
@@ -46,9 +52,6 @@ const long INTTERVAL_SEC = 0;
 const long INTTERVAL_USEC = 50;
 
 /*************************************************/
-
-//4M buffer 
-#define MAXBUFFERSIZE 1<<22
 
 char STDBUFF[MAXBUFFERSIZE];
 char *ORACLEBUFF;
@@ -65,16 +68,29 @@ int __accmut__checkoutput(){
 	return memcmp(STDBUFF, ORACLEBUFF, CURBUFSIZE);
 }
 
-void __accmt__exit(){
+void __accmut__exit(){
 	int res = __accmut__checkoutput();
+	//__accmut__bufferdump();
+
 	if(res != 0){
-		fprintf(stderr, "CONSTRACT %d %d\n", MUTATION_ID, res);
-		__accmut__bufferdump();
-		if(MUTATION_ID == 0){
-			__accmut__oracledump();
-		}
+		//fprintf(stderr, "CONSTRACT %d %d\n", MUTATION_ID, res);
+		//__accmut__bufferdump();
+		
 	}
+
+	// if(MUTATION_ID == 0){
+	// 	__accmut__oracledump();
+	// }
 }
+
+// int __accmut__fprintf(FILE *stream, const char *format, ...){
+// 	int ret;
+// 	va_list ap;
+// 	va_start(ap, format);
+// 	ret = vfprintf(stream, format, ap);
+// 	va_end(ap);
+// 	return 0;
+// }
 
 int __accmut__fprintf(FILE *stream, const char *format, ...){
 	int ret;
@@ -104,7 +120,7 @@ void __accmut__bufinit(){
 	int fd = open(path, O_RDONLY);
 	if(fd == -1){
 		fprintf(stderr, "ORACLEDIR OPEN ERROR !!!!!!\n");
-		fprintf(stderr, "PATH : %s\n", path);
+		fprintf(stderr, "ORACLEDIR PATH : %s\n", path);
 	}
 	struct stat sb;
 	if(fstat(fd, &sb) == -1){
@@ -116,14 +132,16 @@ void __accmut__bufinit(){
 	}
 	ORACLESIZE = sb.st_size;
 
-	if(atexit(__accmt__exit) != 0){
-		fprintf(stderr, "__accmt__exit REGSITER ERROR\n");
+	//regist the exit handler function of a process
+	if(atexit(__accmut__exit) != 0){
+		fprintf(stderr, "__accmut__exit REGSITER ERROR\n");
 	}
 }
 
 
 void __accmut__handler(int sig){
-    fprintf(stdout, "MUT %d TIME OUT!\n", MUTATION_ID);	// TODO::stdout or stderr
+    //fprintf(stderr, "MUT %d TIME OUT!\n", MUTATION_ID);	// TODO::stdout or stderr
+    fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
     exit(0);
 }
 
@@ -158,37 +176,34 @@ void __accmut__bufferdump(){
 	fprintf(stderr, "************ END OF ACCMUT BUFFER ***************\n\n");
 }
 
-/****************************/
+
+/****************************************************************/
 
 #if ACCMUT_MUTATION_SCHEMATA
 	#include<accmut/accmut_schem.h>
 #endif
 
-/****************************/
  
 #if ACCMUT_STATIC_ANALYSIS_EVAL
 	#include<accmut/accmut_sma_eval.h>
 #endif
 
-/****************************/
 
 #if ACCMUT_STATIC_ANALYSIS_FORK_INLINE
 	#include<accmut/accmut_sma_fork.h>
 #endif
 
-/****************************/
 
 #if ACCMUT_STATIC_ANALYSIS_FORK_CALL
 	#include<accmut/accmut_sma_callfork.h>
 #endif
 
-/****************************/
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
 	#include<accmut/accmut_dma_fork.h>
 #endif
 
-/****************************/
+/****************************************************************/
 
 
 #endif
