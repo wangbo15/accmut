@@ -23,7 +23,7 @@
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
 #define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
@@ -34,6 +34,7 @@
 
 //4M buffer 
 #define MAXBUFFERSIZE 1<<22
+#define MAXMUTNUM 10000
 
 /*************************************************/
 
@@ -47,9 +48,11 @@ int TEST_ID = -1;
 //TODO: REAL OR PROF
 struct itimerval tick;
 const long VALUE_SEC = 0;
-const long VALUE_USEC = 500;
+const long VALUE_USEC = 1000;
 const long INTTERVAL_SEC = 0;
-const long INTTERVAL_USEC = 50;
+const long INTTERVAL_USEC = 10;
+
+struct timeval tv_begin, tv_end;
 
 /*************************************************/
 
@@ -57,6 +60,10 @@ char STDBUFF[MAXBUFFERSIZE];
 char *ORACLEBUFF;
 size_t ORACLESIZE = 0;
 size_t CURBUFSIZE = 0;
+
+//mutations.txt backup
+//char MUTSTXT[MAXMUTNUM][50];
+
 
 void __accmut__oracledump();
 void __accmut__bufferdump();
@@ -68,12 +75,10 @@ int __accmut__checkoutput(){
 	return memcmp(STDBUFF, ORACLEBUFF, CURBUFSIZE);
 }
 
-void __accmut__exit(){
+void __accmut__exit_check(){
 	int res = __accmut__checkoutput();
-	//__accmut__bufferdump();
-
 	if(res != 0){
-		//fprintf(stderr, "CONSTRACT %d %d\n", MUTATION_ID, res);
+		fprintf(stderr, "TEST: %d KILL MUT: %d\n", TEST_ID, MUTATION_ID);
 		//__accmut__bufferdump();
 		
 	}
@@ -83,6 +88,13 @@ void __accmut__exit(){
 	// }
 }
 
+void __accmut__exit_time(){
+	gettimeofday(&tv_end, NULL);
+	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
+	fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);
+}
+
+//ORI fprintf
 // int __accmut__fprintf(FILE *stream, const char *format, ...){
 // 	int ret;
 // 	va_list ap;
@@ -133,15 +145,20 @@ void __accmut__bufinit(){
 	ORACLESIZE = sb.st_size;
 
 	//regist the exit handler function of a process
-	if(atexit(__accmut__exit) != 0){
-		fprintf(stderr, "__accmut__exit REGSITER ERROR\n");
+	if(atexit(__accmut__exit_check) != 0){
+		fprintf(stderr, "__accmut__exit_check REGSITER ERROR\n");
 	}
+
+	// if(atexit(__accmut__exit_time) != 0){
+	// 	fprintf(stderr, "__accmut__exit_time REGSITER ERROR\n");
+	// }
 }
 
 
 void __accmut__handler(int sig){
-    //fprintf(stderr, "MUT %d TIME OUT!\n", MUTATION_ID);	// TODO::stdout or stderr
-    fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+    // fprintf(stderr, "%s", MUTSTXT[MUTATION_ID]);
+    fprintf(stderr, "%d\n", MUTATION_ID);	// TODO::stdout or stderr
+    // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
     exit(0);
 }
 
@@ -176,6 +193,10 @@ void __accmut__bufferdump(){
 	fprintf(stderr, "************ END OF ACCMUT BUFFER ***************\n\n");
 }
 
+void __accmut__kill_timeout_muts(){
+
+
+}
 
 /****************************************************************/
 

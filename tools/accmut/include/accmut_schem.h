@@ -1,13 +1,11 @@
 #ifndef ACCMUT_SMA_SCHEM_H
 #define ACCMUT_SMA_SCHEM_H
 
-#include<stdlib.h>
-#include<string.h>
-#include<stdio.h>
-#include<unistd.h>
-#include<sys/wait.h>
-
-#define MAXMUTNUM 10000
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -112,6 +110,9 @@ void __accmut__init(){
 	while(fgets(buff, 50, fp)){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
+
+        //strcpy(MUTSTXT[id], buff);
+
 		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
 		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
 		if(!strcmp(type, "AOR")){

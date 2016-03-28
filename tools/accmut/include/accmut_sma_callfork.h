@@ -1,13 +1,11 @@
 #ifndef ACCMUT_SMA_CALLFORK_H
 #define ACCMUT_SMA_CALLFORK_H
 
-#include<stdlib.h>
-#include<string.h>
-#include<stdio.h>
-#include<unistd.h>
-#include<sys/wait.h>
-
-#define MAXMUTNUM 10000
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include <sys/time.h>
 #include <sys/mman.h>
