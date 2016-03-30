@@ -6,6 +6,9 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+
 #include <unistd.h>
 
 #include <stdarg.h>
@@ -18,7 +21,7 @@
 #define ACCMUT_GEN_MUT 0
 
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 0
+#define ACCMUT_MUTATION_SCHEMATA 1
 
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
@@ -26,7 +29,7 @@
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 
@@ -47,10 +50,10 @@ int TEST_ID = -1;
 /** Set Timer **/
 //TODO: REAL OR PROF
 struct itimerval tick;
-const long VALUE_SEC = 0;
-const long VALUE_USEC = 1000;
-const long INTTERVAL_SEC = 0;
-const long INTTERVAL_USEC = 10;
+long VALUE_SEC = 0;
+long VALUE_USEC = 0;
+long INTTERVAL_SEC = 0;
+long INTTERVAL_USEC = 5;
 
 struct timeval tv_begin, tv_end;
 
@@ -157,7 +160,7 @@ void __accmut__bufinit(){
 
 void __accmut__handler(int sig){
     // fprintf(stderr, "%s", MUTSTXT[MUTATION_ID]);
-    fprintf(stderr, "%d\n", MUTATION_ID);	// TODO::stdout or stderr
+    // fprintf(stderr, "%d\n", MUTATION_ID);	// TODO::stdout or stderr
     // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
     exit(0);
 }
@@ -193,9 +196,24 @@ void __accmut__bufferdump(){
 	fprintf(stderr, "************ END OF ACCMUT BUFFER ***************\n\n");
 }
 
-void __accmut__kill_timeout_muts(){
 
-
+void __accmut__sepcific_timer(){
+	char path[100];
+	strcpy(path, getenv("HOME"));
+	strcat(path, "/tmp/accmut/oritime.txt");
+	FILE * fp = fopen(path, "r");
+	if(fp == NULL){
+		fprintf(stderr, "ORI TIME CANNOT OPEN : %s\n", path);
+		exit(0);
+	}
+	//TODO::optimize
+	int i;
+	for(i = 1; i <= TEST_ID; i++){
+		fscanf(fp, "%d", &VALUE_SEC);
+		fscanf(fp, "%d", &VALUE_USEC);
+	}
+	fclose(fp);
+	// fprintf(stderr, " ~~~~~ %ld %ld\n", VALUE_SEC, VALUE_USEC);
 }
 
 /****************************************************************/

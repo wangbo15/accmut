@@ -166,6 +166,8 @@ long __accmut__fork__eqclass(int from, int to) {
 
 void __accmut__init(){
 
+    __accmut__sepcific_timer();
+    
     tick.it_value.tv_sec = VALUE_SEC;  // sec
     tick.it_value.tv_usec = VALUE_USEC; // u sec.
     tick.it_interval.tv_sec = INTTERVAL_SEC;
