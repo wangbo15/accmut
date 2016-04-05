@@ -43,7 +43,7 @@
 #include "llvm/Transforms/Utils/SymbolRewriter.h"
 #include <memory>
 
-//add by wb
+/************** add by wb *******************************/
 #include "llvm/Transforms/AccMut/MutationGen.h"
 #include "llvm/Transforms/AccMut/Mutation.h"
 #include "llvm/Transforms/AccMut/Config.h"
@@ -60,6 +60,12 @@
 #if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 #include "llvm/Transforms/AccMut/SMAInstrumenter.h"
 #endif
+
+#if ACCMUT_STATISTICS_INSTRUEMENT
+#include "llvm/Transforms/AccMut/StatisticsUtils.h"
+#endif
+
+/*******************************************************/
 
 using namespace clang;
 using namespace llvm;
@@ -617,6 +623,11 @@ DMAInstrumenter *dmaInstru;
 #if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 SMAInstrumenter *smaInstruEval;
 #endif
+
+#if ACCMUT_STATISTICS_INSTRUEMENT
+ExecInstNums *execinstnum;
+#endif
+
 //-----------end-------------------
 
 void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
@@ -677,6 +688,11 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 	#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
 		smaInstruEval = new SMAInstrumenter(TheModule);
 		PerFunctionPasses->add(smaInstruEval);
+	#endif
+
+	#if ACCMUT_STATISTICS_INSTRUEMENT
+		execinstnum = new ExecInstNums(TheModule);
+		PerFunctionPasses->add(execinstnum);
 	#endif
 	//-----------end-------------------
 	

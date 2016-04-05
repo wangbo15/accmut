@@ -102,6 +102,9 @@ void __accmut__mainfork(int id){
 
 void __accmut__init(){
 
+    __accmut__sepcific_timer();
+	
+
     tick.it_value.tv_sec = VALUE_SEC;  // sec
     tick.it_value.tv_usec = VALUE_USEC; // u sec.
     tick.it_interval.tv_sec = INTTERVAL_SEC;
@@ -194,6 +197,12 @@ void __accmut__init(){
 		*(MUTS_ON + i) = 1;
 	}
 	
+
+    fprintf(stderr, "\n-----------------------------------------\n");
+    for(i = 0; i < MAX_MUT_NUM + 1; i++){
+		fprintf(stderr, "%d\n", *(MUTS_ON + i));
+	}
+	
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/input/printtokens/t");
 	sprintf(path, "%s%d", path, TEST_ID);
@@ -213,14 +222,21 @@ void __accmut__init(){
     }
     fclose(fp);
     
+
+    fprintf(stderr, "\n-----------------------------------------\n");
+    for(i = 0; i < MAX_MUT_NUM + 1; i++){
+		fprintf(stderr, "%d\n", *(MUTS_ON + i));
+	}
+
+
    	for(i = 1; i < MAX_MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
 	}
-	/*
-	if(MUTATION_ID == 0){
-		fprintf(stderr, "%d\n",	totalfork);
-	}
-	*/
+	
+	// if(MUTATION_ID == 0){
+	// 	fprintf(stderr, "%d\n",	totalfork);
+	// }
+	
 }
 
 //////

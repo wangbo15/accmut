@@ -21,7 +21,7 @@
 #define ACCMUT_GEN_MUT 0
 
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 1
+#define ACCMUT_MUTATION_SCHEMATA 0
 
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
@@ -29,7 +29,7 @@
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 
 
@@ -56,16 +56,23 @@ long INTTERVAL_SEC = 0;
 long INTTERVAL_USEC = 5;
 
 struct timeval tv_begin, tv_end;
+struct rusage usage_fbegin, usage_fmid,usage_fend;
+struct rusage usage_cbegin, usage_cend;
+
+/*************************************************/
+//FOR STATISTICS
+unsigned long long EXEC_INSTS = 0;
+
 
 /*************************************************/
 
+//FOR BUFFER
 char STDBUFF[MAXBUFFERSIZE];
 char *ORACLEBUFF;
 size_t ORACLESIZE = 0;
 size_t CURBUFSIZE = 0;
 
-//mutations.txt backup
-//char MUTSTXT[MAXMUTNUM][50];
+/*************************************************/
 
 
 void __accmut__oracledump();
@@ -94,7 +101,38 @@ void __accmut__exit_check(){
 void __accmut__exit_time(){
 	gettimeofday(&tv_end, NULL);
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
-	fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);
+	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);
+	fprintf(stderr, "%d\n", MUTATION_ID);
+}
+
+void __accmut__exit_preciese_time(){
+	gettimeofday(&tv_end, NULL);
+	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
+	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
+
+	if(MUTATION_ID == 0){
+		
+		getrusage(RUSAGE_SELF, &usage_fend);
+
+		fprintf(stderr, "%d\t%ld %ld\t%ld %ld\t%ld %ld\n", MUTATION_ID, real_sec, real_usec,
+			usage_fend.ru_utime.tv_sec,  usage_fend.ru_utime.tv_usec, 
+			usage_fend.ru_stime.tv_sec, usage_fend.ru_stime.tv_sec);
+	}else{
+
+		getrusage(RUSAGE_SELF, &usage_cend);
+
+		long child_u_sec = usage_cend.ru_utime.tv_sec - usage_cbegin.ru_utime.tv_sec;
+		long child_u_usec = usage_cend.ru_utime.tv_usec - usage_cbegin.ru_utime.tv_usec;
+		long child_s_sec = usage_cend.ru_stime.tv_sec - usage_cbegin.ru_stime.tv_sec;
+		long child_s_usec = usage_cend.ru_stime.tv_usec - usage_cbegin.ru_stime.tv_usec;
+
+		fprintf(stderr, "%d\t%ld %ld\t%ld %ld\t%ld %ld\n", MUTATION_ID, real_sec, real_usec, 
+			child_u_sec, child_u_usec, child_s_sec, child_s_usec);
+	}
+
+
+
+
 }
 
 //ORI fprintf
@@ -214,6 +252,12 @@ void __accmut__sepcific_timer(){
 	}
 	fclose(fp);
 	// fprintf(stderr, " ~~~~~ %ld %ld\n", VALUE_SEC, VALUE_USEC);
+}
+
+
+void __accmut__exec_inst_nums(){
+	// fprintf(stderr, "0");
+	EXEC_INSTS++;
 }
 
 /****************************************************************/

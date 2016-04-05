@@ -94,13 +94,13 @@ void __accmut__divide__eqclass() {
         long result = temp_result[i];
         int j;
         int flag = 0;
-        //for(j = 0; j < eq_num; ++j) {
-            //if(eqclass[j].value == result) {
-                //eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
-                //flag = 1;
-                //break;
-            //}
-        //}
+        for(j = 0; j < eq_num; ++j) {
+            if(eqclass[j].value == result) {
+                eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
+                flag = 1;
+                break;
+            }
+        }
         if (flag == 0) {
             eqclass[eq_num].value = result;
             eqclass[eq_num].num = 1;
@@ -141,10 +141,20 @@ long __accmut__fork__eqclass(int from, int to) {
     /** fork **/
     for(i = 1; i < eq_num; ++i) {
          int pid = 0;
-         fflush(stdout);
+         // fflush(stdout);
+
          pid = fork();
+
+         // if(pid > 0){
+         //    getrusage(RUSAGE_SELF, &usage_fmid);
+         // }
+
          if(pid == 0) {
-             int r = setitimer(ITIMER_PROF, &tick, NULL); //  发送信号
+
+            // getrusage(RUSAGE_SELF, &usage_cbegin);
+
+
+             int r = setitimer(ITIMER_PROF, &tick, NULL);
              __accmut__filter__mutants(from, to, i);
              MUTATION_ID = eqclass[i].mut_id[0];
 
@@ -152,7 +162,7 @@ long __accmut__fork__eqclass(int from, int to) {
 
              return eqclass[i].value;
          } else {
-             fflush(stdout);
+             // fflush(stdout);
              waitpid(pid, NULL, 0);
          }
     }
@@ -167,7 +177,7 @@ long __accmut__fork__eqclass(int from, int to) {
 void __accmut__init(){
 
     __accmut__sepcific_timer();
-    
+
     tick.it_value.tv_sec = VALUE_SEC;  // sec
     tick.it_value.tv_usec = VALUE_USEC; // u sec.
     tick.it_interval.tv_sec = INTTERVAL_SEC;
