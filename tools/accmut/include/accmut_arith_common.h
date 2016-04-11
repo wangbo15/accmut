@@ -1,3 +1,7 @@
+#ifndef ACCMUT_ARITH_COMMON_H
+#define ACCMUT_ARITH_COMMON_H
+
+
 #include <limits.h>
 
 int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
@@ -110,3 +114,6 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 			exit(0);
 	}
 }
+
+
+#endif

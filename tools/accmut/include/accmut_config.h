@@ -1,5 +1,5 @@
-#ifndef ACCMUT_MUT_CONFIG_H
-#define ACCMUT_MUT_CONFIG_H
+#ifndef ACCMUT_CONFIG_H
+#define ACCMUT_CONFIG_H
 
 #include <stdio.h>
 #include <stdlib.h>

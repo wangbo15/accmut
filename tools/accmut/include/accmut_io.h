@@ -1,5 +1,5 @@
-#ifndef ACCMUT_MUT_IO_H
-#define ACCMUT_MUT_IO_H
+#ifndef ACCMUT_IO_H
+#define ACCMUT_IO_H
 
 
 #include <sys/mman.h>
