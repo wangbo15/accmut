@@ -28,6 +28,8 @@ typedef struct _ACCMUT_INPUT_FILE{
 
 
 ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
+
+
 	//TODO: check mode
 	if(*mode != 'r' && *(mode+1) != NULL){// only support READ-ONLY mode now
 		fprintf(stderr, "ERROR FOPEN MODE : %s !\n", mode);
@@ -56,7 +58,7 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
 	if(size <= 0)
 		return NULL;
-	
+		
 	if(fp->cur - fp->bufbase >= fp->fsize)
 		return NULL;
 	

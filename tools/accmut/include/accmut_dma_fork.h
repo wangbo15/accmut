@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#include <accmut/accmut_arith_common.h>
 
 typedef enum MTYPE{
 	AOR,
@@ -269,53 +270,14 @@ void __accmut__process_call_void(){
 
 ///////
 
-int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
-	switch(op){
-		case 14: return a + b;
-		case 16: return a - b;
-		case 18: return a * b;
-		case 20: return ((unsigned)a) / ((unsigned)b);
-		case 21: return a / b;
-		case 23: return ((unsigned)a) % ((unsigned)b);
-		case 24: return a % b;
-		case 26: return a << b;
-		case 27: return ((unsigned)a) >> ((unsigned)b);
-		case 28: return a >> b;
-		case 29: return a & b;
-		case 30: return a | b;
-		case 31: return a ^ b;
-		default:
-			perror("ERROR : __accmut__cal_i32_arith !!!\n");
-			exit(0);
-	}
-}
-
-long __accmut__cal_i64_arith(int op, long a, long b){// TODO:: add float point
-	switch(op){
-		case 14: return a + b;
-		case 16: return a - b;
-		case 18: return a * b;
-		case 20: return ((unsigned long)a) / ((unsigned long)b);
-		case 21: return a / b;
-		case 23: return ((unsigned long)a) % ((unsigned long)b);
-		case 24: return a % b;
-		case 26: return a << b;
-		case 27: return ((unsigned long)a) >> ((unsigned long)b);
-		case 28: return a >> b;
-		case 29: return a & b;
-		case 30: return a | b;
-		case 31: return a ^ b;
-		default:
-			perror("ERROR : __accmut__cal_i64_arith !!!\n");
-			exit(0);
-	}
-}
-
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){
+
+
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->op , left, right);
-    
+
     __accmut__filter__variant(from, to);
+
     // generate recent_set
     int i;
     for(i = 0; i < recent_num; ++i) {
@@ -333,7 +295,6 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
             temp_result[i] = __accmut__cal_i32_arith(ALLMUTS[recent_set[i]]->t_op, left, right);
         }
     }
-
     if(recent_num == 1) {
         if(MUTATION_ID < from || MUTATION_ID > to) {
             return ori;
@@ -386,43 +347,6 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
     return result;
 }
 
-
-int __accmut__cal_i32_bool(int pre, int a, int b){
-	switch(pre){
-		case 32: return a == b;
-		case 33: return a != b;
-		case 34: return ((unsigned) a) > ((unsigned) b);
-		case 35: return ((unsigned) a) >= ((unsigned) b);
-		case 36: return ((unsigned) a) < ((unsigned) b);
-		case 37: return ((unsigned) a) <= ((unsigned) b);
-		case 38: return a > b;
-		case 39: return a >= b;
-   
-		case 40: return a < b;
-		case 41: return a <= b;
-		default:
-			fprintf(stderr, "ERROR : __accmut_cal_i32_bool with %d !!!\n", pre);
-			exit(0);
-	}
-}
-
-int __accmut__cal_i64_bool(int pre, long a, long b){
-	switch(pre){
-		case 32: return a == b;
-		case 33: return a != b;
-		case 34: return ((unsigned long) a) > ((unsigned long) b);
-		case 35: return ((unsigned long) a) >= ((unsigned long) b);
-		case 36: return ((unsigned long) a) < ((unsigned long) b);
-		case 37: return ((unsigned long) a) <= ((unsigned long) b);
-		case 38: return a > b;
-		case 39: return a >= b;
-		case 40: return a < b;
-		case 41: return a <= b;
-		default:
-			fprintf(stderr, "ERROR : __accmut__cal_i64_bool !!!\n");
-			exit(0);
-	}
-}
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre , left, right);

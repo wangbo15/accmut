@@ -5,9 +5,14 @@
 #include<string.h>
 #include<stdlib.h>
 
+/*
+	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
+*/
+
+
 #define MAXSIZE 2000
 #define MAXCALLTIME 200
-///?????
+///
 #define UNDEF 0xBEEFDEAD
 
 typedef struct Expression {
