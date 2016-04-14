@@ -68,7 +68,7 @@ void __accmut__exit_time(){
 	gettimeofday(&tv_end, NULL);
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
 	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);
-	fprintf(stderr, "%d\n", MUTATION_ID);
+	fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 }
 
 void __accmut__exit_preciese_time(){

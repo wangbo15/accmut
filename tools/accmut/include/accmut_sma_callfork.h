@@ -199,11 +199,11 @@ void __accmut__init(){
 		*(MUTS_ON + i) = 1;
 	}
 	
-
+/*
     fprintf(stderr, "\n-----------------------------------------\n");
     for(i = 0; i < MAX_MUT_NUM + 1; i++){
 		fprintf(stderr, "%d\n", *(MUTS_ON + i));
-	}
+	}*/
 	
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/input/printtokens/t");
@@ -224,12 +224,12 @@ void __accmut__init(){
     }
     fclose(fp);
     
-
+/*
     fprintf(stderr, "\n-----------------------------------------\n");
     for(i = 0; i < MAX_MUT_NUM + 1; i++){
-		fprintf(stderr, "%d\n", *(MUTS_ON + i));
+		fprintf(stderr, "%d:%d\n", i, *(MUTS_ON + i));
 	}
-
+*/
 
    	for(i = 1; i < MAX_MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
@@ -267,7 +267,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 	Mutation *m = ALLMUTS[MUTATION_ID];
 	
 	int mut_res;
-	if(m->type == AOR){
+	if(m->type == AOR || m->type == LOR){
 		mut_res = __accmut__cal_i32_arith(m->t_op, left, right);
 	}else if(m->type == LVR){
 	

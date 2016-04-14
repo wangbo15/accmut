@@ -132,12 +132,12 @@ int __accmut__fprintf(FILE *stream, const char *format, ...){
 	va_end(ap);
 
 	if(ret > 4096){
-		perror("BUFFER LINE OVERFLOW !!!!!!!\n");
+		fprintf(stderr, "BUFFER LINE OVERFLOW !!!!!!!\n");
 	}
 
 	int total = CURBUFSIZE + ret;
 	if(total >= MAXBUFFERSIZE){
-		perror("ACCMUT BUFFER OVERFLOW !!!!!!\n");
+		fprintf(stderr, "ACCMUT BUFFER OVERFLOW !  MUT: %d\n", MUTATION_ID);
 		exit(0);
 	}
 	memcpy((STDBUFF + CURBUFSIZE), tmp, ret*(sizeof(char)) );
