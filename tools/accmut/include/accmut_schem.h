@@ -238,7 +238,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 	Mutation *m = ALLMUTS[MUTATION_ID];
 	
 	int mut_res;
-	if(m->type == AOR){
+	if(m->type == AOR || m->type == LOR){
 		mut_res = __accmut__cal_i32_arith(m->t_op, left, right);
 	}else if(m->type == LVR){
 	
