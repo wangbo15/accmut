@@ -31,7 +31,7 @@
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 const char PROJECT[]="printtokens";
@@ -47,7 +47,7 @@ long INTTERVAL_SEC = 0;
 long INTTERVAL_USEC = 5;
 
 struct timeval tv_begin, tv_end;
-struct rusage usage_fbegin, usage_fmid,usage_fend;
+struct rusage usage_fbegin, usage_fmid, usage_fend;
 struct rusage usage_cbegin, usage_cend;
 
 /**********************************************************/
