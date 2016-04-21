@@ -150,6 +150,7 @@ int __accmut__fseek(ACCMUT_FILE *fp, size_t offset, int loc){
 
 ACCMUT_FILE * __accmut__freopen(const char *path, const char *mode, ACCMUT_FILE *stream){
 	//TODO
+	
 	return NULL;
 }
 
@@ -196,7 +197,7 @@ int __accmut__fputc(int c, ACCMUT_FILE *fp){
 	if(fp->write_cur >= fp->bufend){
 		fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputc\n");
 		//TODO: need something to fflush
-		exit(0);
+		return EOF;
 	}
 	fp->fsize++;
 	*(fp->write_cur) = c;
@@ -209,25 +210,32 @@ int __accmut__fputc(int c, ACCMUT_FILE *fp){
 
 int __accmut__fputs(const char* s, ACCMUT_FILE *fp){
 	int result = EOF;
-	int c;
-	if(fp->write_cur + len < fp->bufend){
-		while(c = *s++){
-			__accmut__putc(c, fp);
-		}
-		result = 1;
+	size_t len = strlen(s);
+	if(fp->write_cur + len >= fp->bufend){
+		fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputs\n");
+	}else{
+		memcpy(fp->write_cur, s, len);
+		fp->write_cur += len;
+		fp->fsize += len;
+		result = 1;	
 	}
 	return result;
 }
 
 int __accmut__puts(const char* s){
 	int result = EOF;
-	int c;
-	if(fp->write_cur + len < fp->bufend){
-		while(c = *s++){
-			__accmut__putc(c, accmut_stdout);
-		}
-		__accmut__putc(c, accmut_stdout);
-		result = 1;
+	size_t len = strlen(s);
+	if( (accmut_stdout->write_cur + len + 1) >= accmut_stdout->bufend){
+		fprintf(stderr, "STDOUT OVERFLOW @ __accmut__puts\n");
+	}else{
+		memcpy(accmut_stdout->write_cur, s, len);		
+		accmut_stdout->write_cur += len;
+		*accmut_stdout->write_cur = '\n';
+		accmut_stdout->write_cur++;
+		//*accmut_stdout->write_cur = '\0';
+		//accmut_stdout->write_cur++;
+		accmut_stdout->fsize += len + 1;
+		result = 1;	
 	}
 	return result;
 }
