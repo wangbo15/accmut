@@ -70,6 +70,8 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 
 	int omode;
 	int oflags = 0;
+	int oprot = 0666;
+
 	switch(*mode++)
 	{
 		case 'r':
@@ -92,9 +94,10 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 	// }
 
 
-	int _fd = open(path, omode);
+	int _fd = open(path, omode | oflags, oprot);
 
 	if(_fd < 0){
+		fprintf(stderr, "OPEN ERROR, PATH: \"%s\", MODE: %d . @__accmut__fopen\n", path, omode);
 		return NULL;
 	}
 	
@@ -254,7 +257,7 @@ size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
 	if (bytes_requested == 0)
     	return 0;
 
-    fprintf(stderr, "%d %d %d\n", fp->fd, bytes_requested, fp->bufend - fp->read_cur);
+    //fprintf(stderr, "%d %d %d\n", fp->fd, bytes_requested, fp->bufend - fp->read_cur);
    
     char *s = buf;
 
@@ -263,7 +266,7 @@ size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
     	memcpy(s, fp->read_cur, fp->bufend - fp->read_cur);
     	int res = (fp->bufend - fp->read_cur)/size;
     	fp->read_cur = fp->bufend;
-    	fprintf(stderr, "%s\n", s);
+    	//fprintf(stderr, "%s\n", s);
     	return res;
     }
     memcpy(s, fp->read_cur, bytes_requested);
@@ -333,6 +336,11 @@ int __accmut__puts(const char* s){
 // }
 
 int __accmut__fprintf(ACCMUT_FILE *fp, const char *format, ...){
+
+	if(fp == NULL){
+		fprintf(stderr, "NULL ACCMUT FILE  !!! @__accmut__fprintf\n");
+	}
+
 	int ret;
 	va_list ap;
 	va_start(ap, format);
@@ -469,6 +477,11 @@ void __accmut__oracledump(){
 }
 
 void __accmut__filedump(ACCMUT_FILE *fp){
+
+	if(fp == NULL){
+		fprintf(stderr, "NULL ACCMUT_FILE !!! @__accmut__filedump\n");
+		exit(0);
+	}
 
 	size_t sz;
 	if(fp->flags == O_RDONLY){
