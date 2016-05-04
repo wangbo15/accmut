@@ -34,7 +34,8 @@
 #define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
-const char PROJECT[]="printtokens";
+// const char PROJECT[]="printtokens";
+const char PROJECT[]="flex";
 int MUTATION_ID = 0;
 int TEST_ID = -1;
 
@@ -66,9 +67,18 @@ void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
 	gettimeofday(&tv_end, NULL);
+
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
-	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);
-	fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+
+	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
+	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
+
+	fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
+	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);	//stderr || stdout
+
+	// fprintf(stderr, "%d\t%lf\n", TEST_ID, interval);	//stderr || stdout
+
+	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 }
 
 void __accmut__exit_preciese_time(){
