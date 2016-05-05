@@ -159,7 +159,7 @@ long __accmut__fork__eqclass(int from, int to) {
              __accmut__filter__mutants(from, to, i);
              MUTATION_ID = eqclass[i].mut_id[0];
 
-             //printf("%d\t%d\n", TEST_ID, MUTATION_ID);
+             //fprintf(stderr, "%d\t%d\n", TEST_ID, MUTATION_ID);
 
              return eqclass[i].value;
          } else {
@@ -275,6 +275,8 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->op , left, right);
+
+    //fprintf(stderr, "MID: %d PID: %d LEFT: %d REGIHT: %d ORI: %d\n", MUTATION_ID, getpid(), left, right, ori);
 
     __accmut__filter__variant(from, to);
 

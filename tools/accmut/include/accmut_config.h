@@ -31,8 +31,11 @@
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
+
+//for DMA FORK
+#define MAXMUTNUM 32768
 
 // const char PROJECT[]="printtokens";
 const char PROJECT[]="flex";
@@ -73,10 +76,10 @@ void __accmut__exit_time(){
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
-	fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
+	// fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
 	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);	//stderr || stdout
 
-	// fprintf(stderr, "%d\t%lf\n", TEST_ID, interval);	//stderr || stdout
+	fprintf(stderr, "ATEXIT %d\t%d\t%lf\n", MUTATION_ID, getpid(), interval);	//stderr || stdout
 
 	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 }
