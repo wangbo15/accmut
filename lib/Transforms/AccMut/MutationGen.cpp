@@ -142,6 +142,7 @@ void MutationGen::genAOR(Instruction *inst, StringRef fname, int index){
 			<< ":"<<arith_opcodes[i]<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();
+		ofresult.flush();
 	}
 }
 
@@ -180,6 +181,7 @@ void MutationGen::genROR(Instruction *inst,StringRef fname, int index){
 			ofresult<<ss.str();
 		}
 	}
+	ofresult.flush();
 }
 
 void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
@@ -192,6 +194,7 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 			<< ":"<<logic_opcodes[i]<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();
+		ofresult.flush();
 	}	
 }
 
@@ -214,6 +217,7 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 			<< ":"<<32<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();
+		ofresult.flush();
 	}else if(tt->isVoidTy()){
 		//2. if the func returns void, subsitute @llvm.donothing for the func
 		//errs()<<"IT IS A VOID !!\n";
@@ -222,6 +226,7 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 			<< ":"<<0<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();
+		ofresult.flush();
 	}else if(tt->isIntegerTy(64)){
 		//1. if the func returns a int64 val, let it be 0
 		//errs()<<"IT IS A 64 !!\n";
@@ -230,7 +235,9 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 			<< ":"<<64<<'\n';
 		mutation_id++;
 		ofresult<<ss.str();		
+		ofresult.flush();
 	}
+	
 }
 
 // for a numeral value T, LVR will generate 4 mut: 0, 1, -1, T+1, T-1 
@@ -342,7 +349,7 @@ void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 					mutation_id ++;
 					ofresult<<ss.str();	
 				}
-				
+				ofresult.flush();
 		}
 
 	}

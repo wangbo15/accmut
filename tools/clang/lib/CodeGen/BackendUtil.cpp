@@ -84,6 +84,8 @@ class EmitAssemblyHelper {
   mutable legacy::PassManager *CodeGenPasses;
   mutable legacy::PassManager *PerModulePasses;
   mutable legacy::FunctionPassManager *PerFunctionPasses;
+  mutable legacy::FunctionPassManager *AccmutInstFuncPasses;
+
 
 private:
   TargetIRAnalysis getTargetIRAnalysis() const {
@@ -119,7 +121,16 @@ private:
     }
     return PerFunctionPasses;
   }
-
+  
+  legacy::FunctionPassManager *getAccmutInstFuncPasses() const {
+    if (!AccmutInstFuncPasses) {
+      AccmutInstFuncPasses = new legacy::FunctionPassManager(TheModule);
+      AccmutInstFuncPasses->add(
+          createTargetTransformInfoWrapperPass(getTargetIRAnalysis()));
+    }
+    return AccmutInstFuncPasses;
+  }
+  
   void CreatePasses();
 
   /// Generates the TargetMachine.
@@ -146,12 +157,14 @@ public:
     : Diags(_Diags), CodeGenOpts(CGOpts), TargetOpts(TOpts), LangOpts(LOpts),
       TheModule(M), CodeGenerationTime("Code Generation Time"),
       CodeGenPasses(nullptr), PerModulePasses(nullptr),
-      PerFunctionPasses(nullptr) {}
+      PerFunctionPasses(nullptr), AccmutInstFuncPasses(nullptr) {}
 
   ~EmitAssemblyHelper() {
     delete CodeGenPasses;
     delete PerModulePasses;
     delete PerFunctionPasses;
+    delete AccmutInstFuncPasses;
+	
     if (CodeGenOpts.DisableFree)
       BuryPointer(std::move(TM));
   }
@@ -406,6 +419,11 @@ void EmitAssemblyHelper::CreatePasses() {
   if (CodeGenOpts.VerifyModule)
     FPM->add(createVerifierPass());
   PMBuilder.populateFunctionPassManager(*FPM);
+
+  legacy::FunctionPassManager *ACCMUTFPM = getAccmutInstFuncPasses();
+  if (CodeGenOpts.VerifyModule)
+    ACCMUTFPM->add(createVerifierPass());
+  PMBuilder.populateFunctionPassManager(*ACCMUTFPM);
 
   // Set up the per-module pass manager.
   legacy::PassManager *MPM = getPerModulePasses();
@@ -680,20 +698,6 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 		PerFunctionPasses->add(mutationGen);
 	#endif
 
-	#if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
-		dmaInstru = new DMAInstrumenter(TheModule);
-		PerFunctionPasses->add(dmaInstru);
-	#endif
-
-	#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
-		smaInstruEval = new SMAInstrumenter(TheModule);
-		PerFunctionPasses->add(smaInstruEval);
-	#endif
-
-	#if ACCMUT_STATISTICS_INSTRUEMENT
-		execinstnum = new ExecInstNums(TheModule);
-		PerFunctionPasses->add(execinstnum);
-	#endif
 	//-----------end-------------------
 	
     PrettyStackTraceString CrashInfo("Per-function optimization");
@@ -717,6 +721,35 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 	#endif 
 	
   }
+
+	//---------- add by wb -----------
+	if(AccmutInstFuncPasses){
+
+	#if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
+		dmaInstru = new DMAInstrumenter(TheModule);
+		AccmutInstFuncPasses->add(dmaInstru);
+	#endif
+
+	#if (ACCMUT_STATIC_ANALYSIS_INSTRUMENT_EVAL || ACCMUT_STATIC_ANALYSIS_INSTRUEMENT_MUT)
+		smaInstruEval = new SMAInstrumenter(TheModule);
+		AccmutInstFuncPasses->add(smaInstruEval);
+	#endif
+
+	#if ACCMUT_STATISTICS_INSTRUEMENT
+		execinstnum = new ExecInstNums(TheModule);
+		AccmutInstFuncPasses->add(execinstnum);
+	#endif
+		
+		PrettyStackTraceString CrashInfo("ACCMUT DMA instrument passes");
+		AccmutInstFuncPasses->doInitialization();
+		for (Function &F : *TheModule)
+			if (!F.isDeclaration())
+				AccmutInstFuncPasses->run(F);
+		AccmutInstFuncPasses->doFinalization();
+	}
+	//-----------end-------------------
+
+
 
   if (PerModulePasses) {
     PrettyStackTraceString CrashInfo("Per-module optimization passes");

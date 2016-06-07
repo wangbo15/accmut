@@ -37,9 +37,18 @@
 //for DMA FORK
 #define MAXMUTNUM 32768
 
+#define PAGESIZE 4096
+
 // const char PROJECT[]="printtokens";
 const char PROJECT[]="flex";
-int MUTATION_ID = 0;
+
+#if ACCMUT_DYNAMIC_ANALYSIS_FORK
+	int HOLDER[1024] __attribute__((aligned(0x1000))) = {0};
+	#define MUTATION_ID (HOLDER[0])
+#else
+	int MUTATION_ID = 0;
+#endif
+
 int TEST_ID = -1;
 
 /** Set Timer **/
@@ -78,7 +87,7 @@ void __accmut__exit_time(){
 
 	// fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
 	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);	//stderr || stdout
-
+	
 	fprintf(stderr, "ATEXIT %d\t%d\t%lf\n", MUTATION_ID, getpid(), interval);	//stderr || stdout
 
 	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);

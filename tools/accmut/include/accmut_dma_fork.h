@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <accmut/accmut_arith_common.h>
 
@@ -154,12 +155,14 @@ long __accmut__fork__eqclass(int from, int to) {
 
             // getrusage(RUSAGE_SELF, &usage_cbegin);
 
-
              int r = setitimer(ITIMER_PROF, &tick, NULL);
              __accmut__filter__mutants(from, to, i);
              MUTATION_ID = eqclass[i].mut_id[0];
 
-             //fprintf(stderr, "%d\t%d\n", TEST_ID, MUTATION_ID);
+            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
+                perror("COULD NOT mprotect !");
+                exit(errno);
+            }
 
              return eqclass[i].value;
          } else {
@@ -172,6 +175,10 @@ long __accmut__fork__eqclass(int from, int to) {
     return result;
 }
 
+void __accmut__SIGSEGV__handler(){
+    //fprintf(stderr, "ATEXIT SIGSEGV MID %d\t%d\t\n", MUTATION_ID, getpid());
+    exit(-1);
+}
 
 /** End Added **/
 
@@ -187,6 +194,9 @@ void __accmut__init(){
 	//perror("######### INIT START ####\n");
     
     signal(SIGPROF, __accmut__handler); 
+
+    signal(SIGSEGV, __accmut__SIGSEGV__handler);
+
     char path[100];
     strcpy(path, getenv("HOME"));
     strcat(path, "/tmp/accmut/mutations.txt");
