@@ -16,6 +16,8 @@
 #include <accmut/accmut_arith_common.h>
 /******************************************************/
 
+#define MUTFILELINE 128
+
 typedef enum MTYPE{
 	AOR,
 	LOR,
@@ -51,21 +53,6 @@ int *MUTS_ON;
 int totalfork = 0;
 
 
-int forked_active_set[21]; 
-int forked_active_num;
-int default_active_set[MAXMUTNUM + 1];
-int recent_set[21];
-int recent_num;
-long temp_result[21];
-
-typedef struct Eqclass {
-    long value;
-    int num;
-    int mut_id[21];
-} Eqclass;
-
-Eqclass eqclass[21];
-int eq_num;
 
 // Algorithms for Dynamic mutation anaylsis 
 
@@ -114,7 +101,7 @@ void __accmut__init(){
 
     signal(SIGPROF, __accmut__handler);
     
-	char path[100];
+	char path[256];
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
@@ -124,10 +111,9 @@ void __accmut__init(){
 	}
 	int id;	
 	char type[4];
-	char buff[50];	
-	char useless[20];
-	char tail[20];
-	while(fgets(buff, 50, fp)){
+	char buff[MUTFILELINE];	
+	char tail[40];
+	while(fgets(buff, MUTFILELINE, fp)){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
 		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);

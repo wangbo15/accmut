@@ -16,6 +16,8 @@
 #include <accmut/accmut_arith_common.h>
 /******************************************************/
 
+#define MUTFILELINE 128
+
 typedef enum MTYPE{
 	AOR,
 	LOR,
@@ -98,7 +100,7 @@ void __accmut__init(){
 
     signal(SIGPROF, __accmut__handler);
     
-	char path[100];
+	char path[256];
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
@@ -108,10 +110,9 @@ void __accmut__init(){
 	}
 	int id;	
 	char type[4];
-	char buff[50];	
-	char useless[20];
-	char tail[20];
-	while(fgets(buff, 50, fp)){
+	char buff[MUTFILELINE];	
+	char tail[40];
+	while(fgets(buff, MUTFILELINE, fp)){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
 
@@ -191,25 +192,6 @@ void __accmut__init(){
 		fprintf(stderr, "%d\n",	totalfork);
 	}*/
 
-/*BUFFER ERROR
-	pid_t pid = fork();
-	
-	if(pid < 0){
-		fprintf(stderr, "FORK ERR!\n");
-		exit(0);
-	}else if(pid == 0){//child process
-		
-	}else{//father process	
-		
-		int pr = waitpid(pid, NULL, 0);
-
-		if(pr < 0){
-			fprintf(stderr, "WAITPID ERROR !!!!!!\n");
-		}			
-	}
-
-	fprintf(stderr, "~~~~~~~~~~~~~ MID : %d ~~~~~~~~~~~~~~~~~\n", MUTATION_ID);
-*/
 }
 
 //////
@@ -266,12 +248,9 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	//fprintf(stderr, "MID : %d\n", MUTATION_ID);
 	
 	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
-		//fprintf(stderr, "F: %d, T: %d M: %d --------1\n", from, to, MUTATION_ID);
-		//fprintf(stderr, "%d \n", ALLMUTS[to]->s_pre);
+
 		int ori = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre , left, right);	
 
-		// fprintf(stderr, "ORI : %d  %d  %d  %d  %d\n", ori, ALLMUTS[to]->s_pre,
-		// 		 ALLMUTS[to]->t_pre, left, right);
 		return ori;
 	}
 	
@@ -279,21 +258,15 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 		
 	int mut_res;
 	if(m->type == ROR){
-		//fprintf(stderr, "F: %d, T: %d M: %d --------2\n", from, to, MUTATION_ID);
+
 		mut_res = __accmut__cal_i32_bool(m->t_pre, left, right);
 		
-
-		// fprintf(stderr, "RES : %d  %d  %d  %d  %d\n", mut_res, ALLMUTS[to]->s_pre,
-		// 		 m->t_pre, left, right);
-
 	}else if(m->type == LVR){
 	
 		if(m->op_index == 0){
-			//fprintf(stderr, "F: %d, T: %d M: %d --------3\n", from, to, MUTATION_ID);
 			mut_res = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre, m->t_con, right);
 		}
 		else{
-			//fprintf(stderr, "F: %d, T: %d M: %d --------4\n", from, to, MUTATION_ID);
 			mut_res = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre, left, m->t_con);
 		}
 

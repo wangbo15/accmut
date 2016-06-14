@@ -16,6 +16,8 @@
 
 #include <accmut/accmut_arith_common.h>
 
+#define MUTFILELINE 128
+
 typedef enum MTYPE{
 	AOR,
 	LOR,
@@ -197,7 +199,7 @@ void __accmut__init(){
 
     signal(SIGSEGV, __accmut__SIGSEGV__handler);
 
-    char path[100];
+    char path[256];
     strcpy(path, getenv("HOME"));
     strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
@@ -207,10 +209,9 @@ void __accmut__init(){
 	}
 	int id;	
 	char type[4];
-	char buff[50];	
-	char useless[20];
-	char tail[20];
-	while(fgets(buff, 50, fp)){
+	char buff[MUTFILELINE];	
+	char tail[40];
+	while(fgets(buff, MUTFILELINE, fp)){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
 

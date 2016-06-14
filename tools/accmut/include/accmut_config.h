@@ -78,6 +78,11 @@ unsigned long long EXEC_INSTS = 0;
 void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
+
+	if(MUTATION_ID != 0){
+		return;
+	}
+
 	gettimeofday(&tv_end, NULL);
 
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;

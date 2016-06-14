@@ -194,7 +194,7 @@ int __accmut__eval_i32(int id, int left, int right){
 
 void __accmut__init(){
 	//load expr.txt
-	char path[100];
+	char path[256];
 	strcpy(path, getenv("HOME"));
 	strcat(path, "/tmp/accmut/expr.txt");
 	FILE * file = fopen(path, "r");
