@@ -14,6 +14,8 @@
 #include <signal.h>
 #include <errno.h>
 
+#include <execinfo.h> //add for debug
+
 #include <accmut/accmut_arith_common.h>
 
 #define MUTFILELINE 128
@@ -161,6 +163,8 @@ long __accmut__fork__eqclass(int from, int to) {
              __accmut__filter__mutants(from, to, i);
              MUTATION_ID = eqclass[i].mut_id[0];
 
+             // fprintf(stderr, "CHILD-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
+
             if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
                 perror("COULD NOT mprotect !");
                 exit(errno);
@@ -170,6 +174,29 @@ long __accmut__fork__eqclass(int from, int to) {
          } else {
              // fflush(stdout);
              waitpid(pid, NULL, 0);
+
+            // fprintf(stderr, "FATHER-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
+
+            #if 0
+
+            int nptrs, j;
+            void *buffer[100];
+            char **strings;
+            nptrs = backtrace(buffer, 20);
+
+            fprintf(stderr, "backtrace() returned %d addresses\n", nptrs);
+
+            strings = backtrace_symbols(buffer, nptrs);
+            if (strings == NULL) {
+                perror("backtrace_symbols");
+                exit(EXIT_FAILURE);
+            }
+            for (j = 0; j < nptrs; j++)
+                fprintf(stderr, "%s\n", strings[j]);
+
+            free(strings);
+
+            #endif
          }
     }
 
@@ -178,8 +205,10 @@ long __accmut__fork__eqclass(int from, int to) {
 }
 
 void __accmut__SIGSEGV__handler(){
-    //fprintf(stderr, "ATEXIT SIGSEGV MID %d\t%d\t\n", MUTATION_ID, getpid());
-    exit(-1);
+    fprintf(stderr, "SIGSEGV !!! TID: %d, MID: %d , PID: %d\t\n", TEST_ID, MUTATION_ID, getpid());
+    // signal(SIGSEGV, SIG_DFL);
+    // exit(1);
+    kill(getpid(), SIGKILL);
 }
 
 /** End Added **/
@@ -197,14 +226,14 @@ void __accmut__init(){
     
     signal(SIGPROF, __accmut__handler); 
 
-    signal(SIGSEGV, __accmut__SIGSEGV__handler);
+    //signal(SIGSEGV, __accmut__SIGSEGV__handler);
 
     char path[256];
     strcpy(path, getenv("HOME"));
     strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
 	if(fp == NULL){
-		perror("FILE ERROR: mutation.txt CAN NOT OPEN !!!\n");
+		fprintf(stderr, "FILE ERROR: mutation.txt CAN NOT OPEN !!! PATH: %s\n", path);
 		exit(0);
 	}
 	int id;	
@@ -214,8 +243,6 @@ void __accmut__init(){
 	while(fgets(buff, MUTFILELINE, fp)){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
-
-        //strcpy(MUTSTXT[id], buff);
 
 		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
 		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
@@ -287,8 +314,6 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->op , left, right);
 
-    //fprintf(stderr, "MID: %d PID: %d LEFT: %d REGIHT: %d ORI: %d\n", MUTATION_ID, getpid(), left, right, ori);
-
     __accmut__filter__variant(from, to);
 
     // generate recent_set
@@ -319,6 +344,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
     __accmut__divide__eqclass();
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
+
     return result;
 
 }
@@ -363,7 +389,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_bool(ALLMUTS[to]->s_pre , left, right);
-    
+
     __accmut__filter__variant(from, to);
 
     // generate recent_set
@@ -394,6 +420,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
     /* fork */
     //int result = ori;
     int result = __accmut__fork__eqclass(from, to);
+
     return result;
 }
 

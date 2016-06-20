@@ -36,7 +36,7 @@ int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 		case 30: return a | b;
 		case 31: return a ^ b;
 		default:
-			fprintf(stderr, "ERROR : __accmut__cal_i32_arith !!! OPCODE : %d, MUT: %d\n", op, MUTATION_ID);
+			fprintf(stderr, "ERROR : __accmut__cal_i32_arith !!! OPCODE : %d, TID: %d, MUT: %d\n", op, TEST_ID, MUTATION_ID);
 			exit(0);
 	}
 }
@@ -73,7 +73,7 @@ long __accmut__cal_i64_arith(int op, long a, long b){// TODO:: add float point
 		case 30: return a | b;
 		case 31: return a ^ b;
 		default:
-			fprintf(stderr, "ERROR : __accmut__cal_i64_arith !!! OPCODE : %d, MUT: %d\n", op, MUTATION_ID);
+			fprintf(stderr, "ERROR : __accmut__cal_i64_arith !!! OPCODE : %d, TID: %d, MUT: %d\n", op, TEST_ID, MUTATION_ID);
 			exit(0);
 	}
 }
@@ -92,7 +92,7 @@ int __accmut__cal_i32_bool(int pre, int a, int b){
 		case 40: return a < b;
 		case 41: return a <= b;
 		default:
-			fprintf(stderr, "ERROR : __accmut_cal_i32_bool !!! PREDECTION: %d, MUT: %d\n", pre, MUTATION_ID);
+			fprintf(stderr, "ERROR : __accmut_cal_i32_bool !!! PREDECTION: %d, TID: %d, MUT: %d\n", pre, TEST_ID, MUTATION_ID);
 			exit(0);
 	}
 }
@@ -110,7 +110,7 @@ int __accmut__cal_i64_bool(int pre, long a, long b){
 		case 40: return a < b;
 		case 41: return a <= b;
 		default:
-			fprintf(stderr, "ERROR : __accmut__cal_i64_bool !!! PREDECTION: %d, MUT: %d\n", pre, MUTATION_ID);
+			fprintf(stderr, "ERROR : __accmut__cal_i64_bool !!! PREDECTION: %d, TID: %d, MUT: %d\n", pre, TEST_ID, MUTATION_ID);
 			exit(0);
 	}
 }

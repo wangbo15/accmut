@@ -105,7 +105,7 @@ void __accmut__init(){
 	strcat(path, "/tmp/accmut/mutations.txt");
 	FILE *fp = fopen(path, "r");
 	if(fp == NULL){
-		fprintf(stderr, "FILE ERROR: mutation.txt can not open !!!\n");
+		fprintf(stderr, "FILE ERROR: mutation.txt CAN NOT OPEN !!! PATH: %s\n", path);
 		exit(0);
 	}
 	int id;	

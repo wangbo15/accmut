@@ -87,13 +87,18 @@ void __accmut__exit_time(){
 
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
 
-	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
-	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
+	// long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
+	// long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
 	// fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
-	// fprintf(stderr, "%d\t%lf\n", MUTATION_ID, interval);	//stderr || stdout
+	// fprintf(stderr, "ATEXIT %d\t%lf\n", TEST_ID, interval);
 	
-	fprintf(stderr, "ATEXIT %d\t%d\t%lf\n", MUTATION_ID, getpid(), interval);	//stderr || stdout
+	FILE* timefile = fopen("timeres", "a");
+
+	fprintf(timefile, "ATEXIT %d\t%lf\n", TEST_ID, interval);	
+
+
+	fclose(timefile);
 
 	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 }
@@ -159,6 +164,15 @@ void __accmut__sepcific_timer(){
 void __accmut__exec_inst_nums(){
 	// fprintf(stderr, "0");
 	EXEC_INSTS++;
+}
+
+
+void __accmut__debug(int index){
+	// if(MUTATION_ID == 0)
+	// 	fprintf(stderr, "~~~~~ %d\n", index);
+	if(index == 2){
+		perror("UNLINK ERR: ");
+	}
 }
 
 /****************************************************************/
