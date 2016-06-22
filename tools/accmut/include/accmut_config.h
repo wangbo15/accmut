@@ -26,12 +26,12 @@
 #define ACCMUT_MUTATION_SCHEMATA 0
 
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 0
+#define ACCMUT_STATIC_ANALYSIS_EVAL 1
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 //for DMA FORK
@@ -87,20 +87,25 @@ void __accmut__exit_time(){
 
 	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
 
-	// long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
-	// long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
+#if 0
+	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
+	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
-	// fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
-	// fprintf(stderr, "ATEXIT %d\t%lf\n", TEST_ID, interval);
+	fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
+#endif
 	
+#if 1
 	FILE* timefile = fopen("timeres", "a");
-
+	if(timefile == 0){
+		fprintf(stderr, "FILE OPEN ERROR @__accmut__exit_time\n");
+	}
 	fprintf(timefile, "ATEXIT %d\t%lf\n", TEST_ID, interval);	
-
-
 	fclose(timefile);
-
+#else
 	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+	fprintf(stderr, "ATEXIT %d\t%lf\n", TEST_ID, interval);
+#endif
+
 }
 
 void __accmut__exit_preciese_time(){

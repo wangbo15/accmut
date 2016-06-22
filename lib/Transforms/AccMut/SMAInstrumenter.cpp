@@ -506,9 +506,9 @@ void dumpToStmtMap(Function &F){
 
 	errs()<<"\n\n  ############  FUNCTION : "<<F.getName()<<"  ########\n\n\n";
 
-	if(F.getName() != "get_token"){
+/*	if(F.getName() != "get_token"){
 		return;
-	}
+	}*/
 
 	int index = 0;
 	

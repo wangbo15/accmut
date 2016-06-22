@@ -97,7 +97,7 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 	int _fd = open(path, omode | oflags, oprot);
 
 	if(_fd < 0){
-		fprintf(stdout, "OPEN ERROR, PATH: \"%s\", MODE: %d  @__accmut__fopen. TID: %d, MUT: %d\n", path, omode, TEST_ID, MUTATION_ID);
+		fprintf(stdout, "OPEN ERROR, PATH: \"%s\", MODE: %d  @__accmut__fopen. TID: %d , MUT: %d\n", path, omode, TEST_ID, MUTATION_ID);
 		return NULL;
 	}
 	

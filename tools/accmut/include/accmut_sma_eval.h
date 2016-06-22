@@ -9,9 +9,10 @@
 	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
 */
 
-
-#define MAXSIZE 2000
-#define MAXCALLTIME 200
+//FIX: MAXSIZE: 2000 , MAXCALLTIME : 200
+#define MAXSIZE (1<<15)	
+#define MAXMUTPERINST (1<<5)
+#define MAXCALLTIME (1<<8)
 ///
 #define UNDEF 0xBEEFDEAD
 
@@ -44,10 +45,14 @@ Mutation muts[MAXSIZE];
 int parent[MAXSIZE];
 int flag[MAXSIZE];
 
+
+//TODO : change fixed size global array to dynamic allocated memory.
 int eval_time[MAXSIZE]; // The eval times of an expression
-int eval_value[MAXSIZE][MAXSIZE][MAXCALLTIME]; // The eval value of an expression at a mutation each time
+int eval_value[MAXSIZE][MAXMUTPERINST][MAXCALLTIME]; // The eval value of an expression at a mutation each time
 
-
+/*
+	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
+*/
 int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 	switch(op){
 		case 14: return a + b;
@@ -89,6 +94,9 @@ int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 	}
 }
 
+/*
+	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
+*/
 int __accmut__cal_i32_bool(int pre, int a, int b){
 	switch(pre){
 		case 32: return a == b;
@@ -254,15 +262,18 @@ void __accmut__init(){
         }
     }
     
-    // fprintf(stderr, "---------------- DUMP INIT ------------\n");
-    // for(i = 1; i <= EXP_COUNT; ++i) {
-    //     fprintf(stderr, "EXPR: %d %c %d %d %d \n", exps[i].id, exps[i].type, exps[i].op, exps[i].larg, exps[i].rarg); 
-    // }
-    // for(i = 1; i <= MUT_COUNT; ++i) {
-    //     fprintf(stderr, "MUT: %d %d %s %d %d %d\n", muts[i].exp, muts[i].id, muts[i].type, muts[i].src, muts[i].tar, muts[i].index);
-    // }
-    // fprintf(stderr, "EXP_COUNT: %d MID_CNT: %d\n", EXP_COUNT, MUT_COUNT);
-    // fprintf(stderr, "---------------- DUMP INIT END ------------\n");
+#if 0
+    fprintf(stderr, "---------------- DUMP INIT ------------\n");
+    for(i = 1; i <= EXP_COUNT; ++i) {
+        fprintf(stderr, "EXPR: %d %c %d %d %d \n", exps[i].id, exps[i].type, exps[i].op, exps[i].larg, exps[i].rarg); 
+    }
+    for(i = 1; i <= MUT_COUNT; ++i) {
+        fprintf(stderr, "MUT: %d %d %s %d %d %d\n", muts[i].exp, muts[i].id, muts[i].type, muts[i].src, muts[i].tar, muts[i].index);
+    }
+    fprintf(stderr, "EXP_COUNT: %d MID_CNT: %d\n", EXP_COUNT, MUT_COUNT);
+    fprintf(stderr, "---------------- DUMP INIT END ------------\n");
+#endif
+
 }
 
 int __accmut__equal_mut(mid1, mid2){
@@ -302,12 +313,26 @@ int __accmut__find_set(int k) {
 
 void __accmut__output_set() {
     //fprintf(stderr, "SET NUM %d\n", MUT_COUNT);
+
+	char path[256];
+
+	sprintf(path, "%s/tmp/accmut/input/%s/t%d", getenv("HOME"), PROJECT, TEST_ID);	
+
+	FILE* fp = fopen(path ,"w");
+
+	if(fp == NULL){
+		fprintf(stderr, "OPEN ERR @__accmut__output_set : %s\n", path);
+		exit(1);
+	}
+
     int i;
     for(i = 0; i <= MUT_COUNT; ++i) {
         int root = __accmut__find_set(i);
-        fprintf(stderr, "%d:%d\n", muts[i].id, muts[root].id);
+        fprintf(fp, "%d:%d\n", muts[i].id, muts[root].id);
         flag[root] = 1;
     }
+    fclose(fp);
+    //fprintf(stderr, "SMA EVAL END FOR TEST %d\n", TEST_ID);
 }
 
 void __accmut__eval_analysis(){
