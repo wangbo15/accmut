@@ -51,28 +51,31 @@ Mutation* ALLMUTS[MAXMUTNUM + 1];
 
 /** Added By Shiyqw **/
 
-int forked_active_set[21]; 
-int forked_active_num;
-int default_active_set[MAXMUTNUM + 1];
-int recent_set[21];
-int recent_num;
-long temp_result[21];
+int forked_active_set[21]; // 当前进程所包含的MUTATION ID
+int forked_active_num; // 当前进程所包含的MUTATION ID的数量
+int default_active_set[MAXMUTNUM + 1]; // 当前未激活过的所有MUTATION ID的位表，0代表已激活，1代表未激活
+int recent_set[21]; // 当前激活的MUTATION ID
+int recent_num; // 当前激活的MUTATION ID的个数
+long temp_result[21]; // 保存临时计算结果
 
+// 等价类的数据结构
 typedef struct Eqclass {
-    long value;
-    int num;
-    int mut_id[21];
+    long value; // 代表这个等价类的计算结果
+    int num; // 代表这个等价类中的元素个数
+    int mut_id[21]; //代表这个等价类中的每个元素（都是一个Mutation ID）
 } Eqclass;
 
-Eqclass eqclass[21];
-int eq_num;
+Eqclass eqclass[21]; //每次划分至多21个等价类，其实最多应该只有十几个
+int eq_num; //实时等价类的个数
 
 // Algorithms for Dynamic mutation anaylsis 
 
+// 此方法从当执行的进程所包含的所有MUTATION ID中筛选出在在from～to范围中的ID，结果存到resent_set中，个数存到recent_num中
 void __accmut__filter__variant(int from, int to) {
-    recent_num = 0;
+    recent_num = 0; 
     int i;
     if (MUTATION_ID == 0) {
+        // 如果当前为原进程，则从位表中选取
         recent_set[recent_num++] = 0;
         for(i = from; i <= to; ++i) {
             if (default_active_set[i] == 1) {
@@ -80,12 +83,14 @@ void __accmut__filter__variant(int from, int to) {
             }
         }
     } else {
+        // 如果当前不是原进程，则从当前进程所包含的MUTATION ID中选取
         for(i = 0; i < forked_active_num; ++i) {
             if (forked_active_set[i] >= from && forked_active_set[i] <= to) {
                 recent_set[recent_num++] = forked_active_set[i];
             }
         }
         if(recent_num == 0) {
+            // 如果不是原进程且当前进程所包含的MUTATION ID中没有在from to之间的元素，那么表示当前进程在这句IR上没有变异，需要把原进程加入。
             recent_set[recent_num++] = 0;
         }
     }
@@ -93,20 +98,23 @@ void __accmut__filter__variant(int from, int to) {
 }
 //
 
+// 根据已经得到的临时计算结果划分等价类
 void __accmut__divide__eqclass() {
     eq_num = 0;
     int i;
-    for(i = 0; i < recent_num; ++i) {
+    for(i = 0; i < recent_num; ++i) { // 对每一个临时计算结果
         long result = temp_result[i];
         int j;
         int flag = 0;
-        for(j = 0; j < eq_num; ++j) {
+        for(j = 0; j < eq_num; ++j) { // 循环遍历已经划分出的等价类，看它们的值是否相等
             if(eqclass[j].value == result) {
+                // 如果是，那么加入等价类。
                 eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
                 flag = 1;
                 break;
             }
         }
+        // 如果不属于任何一个等价类，那么自成为一个等价类
         if (flag == 0) {
             eqclass[eq_num].value = result;
             eqclass[eq_num].num = 1;
@@ -116,10 +124,12 @@ void __accmut__divide__eqclass() {
     }
 }
 
+// 根据当前等价类筛选出当前进程所包含的MID
 void __accmut__filter__mutants(int from, int to, int classid) {
     /** filter_mutants **/
     int j;
     if(eqclass[classid].mut_id[0] == 0) {
+        // 如果当前为原进程，首先将位表中from到to全设为0（已激活），然后将当前等价类中所包含的其他进程设为1（未激活）
         for(j = from; j <= to; ++j) {
             default_active_set[j] = 0;
         }
@@ -127,6 +137,7 @@ void __accmut__filter__mutants(int from, int to, int classid) {
            default_active_set[eqclass[classid].mut_id[j]] = 1;
         }
     } else {
+        // 如果当前不是原进程，那么直接加入等价类中的所有ID
         forked_active_num = 0;
         for(j = 0; j < eqclass[classid].num; ++j) {
             forked_active_set[forked_active_num++] = eqclass[classid].mut_id[j];
@@ -134,18 +145,21 @@ void __accmut__filter__mutants(int from, int to, int classid) {
     }
 }
 
+// 根据等价类进行fork
 long __accmut__fork__eqclass(int from, int to) {
 
+    // 如果等价类个数为1，直接返回
     if(eq_num == 1) {
         return eqclass[0].value;
     }
 
+    // 保存原结果
     int result = eqclass[0].value;
     int id = eqclass[0].mut_id[0];
     int i;
     
     /** fork **/
-    for(i = 1; i < eq_num; ++i) {
+    for(i = 1; i < eq_num; ++i) { // 依次fork每个等价类
          int pid = 0;
          // fflush(stdout);
 
@@ -160,7 +174,7 @@ long __accmut__fork__eqclass(int from, int to) {
             // getrusage(RUSAGE_SELF, &usage_cbegin);
 
              int r = setitimer(ITIMER_PROF, &tick, NULL);
-             __accmut__filter__mutants(from, to, i);
+             __accmut__filter__mutants(from, to, i); // 筛选出当前包含的ID
              MUTATION_ID = eqclass[i].mut_id[0];
 
              // fprintf(stderr, "CHILD-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
@@ -170,7 +184,7 @@ long __accmut__fork__eqclass(int from, int to) {
                 exit(errno);
             }
 
-             return eqclass[i].value;
+             return eqclass[i].value; // 子进程返回子进程的计算结果
          } else {
              // fflush(stdout);
              waitpid(pid, NULL, 0);
@@ -200,8 +214,8 @@ long __accmut__fork__eqclass(int from, int to) {
          }
     }
 
-    __accmut__filter__mutants(from, to, 0);
-    return result;
+    __accmut__filter__mutants(from, to, 0); // 筛选出当前包含的ID
+    return result; // 父进程返回父进程的计算结果
 }
 
 void __accmut__SIGSEGV__handler(){
@@ -287,7 +301,7 @@ void __accmut__init(){
 	}
 
     int i;
-    for(i = 0; i <= MAXMUTNUM; ++i) default_active_set[i] = 1;
+    for(i = 0; i <= MAXMUTNUM; ++i) default_active_set[i] = 1; // 位表初始化
 
 	//perror("######### INIT END ####\n");
 }
@@ -314,7 +328,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->op , left, right);
 
-    __accmut__filter__variant(from, to);
+    __accmut__filter__variant(from, to); // 首先筛选出表达式上的ID
 
     // generate recent_set
     int i;
@@ -332,14 +346,16 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
         } else {
             temp_result[i] = __accmut__cal_i32_arith(ALLMUTS[recent_set[i]]->t_op, left, right);
         }
-    }
-    if(recent_num == 1) {
+    } // 计算结果
+    if(recent_num == 1) { 
+        // 如果只有一个ID，直接返回
         if(MUTATION_ID < from || MUTATION_ID > to) {
             return ori;
         }
         return temp_result[0];
     }
 
+    // 否则划分等价类并进行fork
     /* divide */
     __accmut__divide__eqclass();
     /* fork */
