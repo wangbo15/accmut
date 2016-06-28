@@ -31,6 +31,16 @@
 using namespace clang;
 using namespace CodeGen;
 
+
+//add by wb
+using llvm::Value;
+
+extern Stmt *curStmt;
+extern std::map<Value*, Stmt*> toStmtMap;
+//extern clang::ASTContext *ast_ctx_temp;
+
+
+
 //===----------------------------------------------------------------------===//
 //                              Statement Emission
 //===----------------------------------------------------------------------===//
@@ -47,6 +57,14 @@ void CodeGenFunction::EmitStopPoint(const Stmt *S) {
 
 void CodeGenFunction::EmitStmt(const Stmt *S) {
   assert(S && "Null statement?");
+
+/*
+  llvm::errs()<<'\n';
+  S->dump();
+  llvm::errs()<<'\n';
+ */
+ 	curStmt = const_cast<Stmt *>(S);
+  
   PGO.setCurrentStmt(S);
 
   // These statements have their own debug info handling.
@@ -562,6 +580,10 @@ void CodeGenFunction::EmitIfStmt(const IfStmt &S) {
   if (S.getElse())
     ElseBlock = createBasicBlock("if.else");
 
+	//add by wb
+	curStmt = const_cast<Stmt*>(static_cast<const Stmt*>(S.getCond()));
+
+
   EmitBranchOnBoolExpr(S.getCond(), ThenBlock, ElseBlock,
                        getProfileCount(S.getThen()));
 
@@ -623,6 +645,10 @@ void CodeGenFunction::EmitWhileStmt(const WhileStmt &S,
 
   if (S.getConditionVariable())
     EmitAutoVarDecl(*S.getConditionVariable());
+
+
+	curStmt = const_cast<Stmt*>(static_cast<const Stmt*>(S.getCond()));
+
 
   // Evaluate the conditional in the while header.  C99 6.8.5.1: The
   // evaluation of the controlling expression takes place before each
@@ -703,6 +729,9 @@ void CodeGenFunction::EmitDoStmt(const DoStmt &S,
   }
 
   EmitBlock(LoopCond.getBlock());
+
+  	curStmt = const_cast<Stmt*>(static_cast<const Stmt*>(S.getCond()));
+
 
   // C99 6.8.5.2: "The evaluation of the controlling expression takes place
   // after each execution of the loop body."
@@ -787,6 +816,10 @@ void CodeGenFunction::EmitForStmt(const ForStmt &S,
 
     // As long as the condition is true, iterate the loop.
     llvm::BasicBlock *ForBody = createBasicBlock("for.body");
+
+
+	curStmt = const_cast<Stmt*>(static_cast<const Stmt*>(S.getCond()));
+
 
     // C99 6.8.5p2/p4: The first substatement is executed if the expression
     // compares unequal to 0.  The condition must be a scalar type.
@@ -1453,6 +1486,10 @@ void CodeGenFunction::EmitSwitchStmt(const SwitchStmt &S) {
   RunCleanupsScope ConditionScope(*this);
   if (S.getConditionVariable())
     EmitAutoVarDecl(*S.getConditionVariable());
+
+  curStmt = const_cast<Stmt*>(static_cast<const Stmt*>(S.getCond()));
+  
+  
   llvm::Value *CondV = EmitScalarExpr(S.getCond());
 
   // Create basic block to hold stuff that comes after switch

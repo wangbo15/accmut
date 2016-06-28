@@ -49,7 +49,18 @@
 #include <system_error>
 #include <time.h>
 
+//add by wb
+#include "llvm/IR/Value.h"
+
+
 using namespace clang;
+
+
+//add by wb
+using llvm::Value;
+Stmt *curStmt;
+std::map<Value*, Stmt*> toStmtMap;
+
 
 CompilerInstance::CompilerInstance(
     std::shared_ptr<PCHContainerOperations> PCHContainerOps,

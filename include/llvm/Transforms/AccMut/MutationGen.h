@@ -14,6 +14,8 @@
 
 #include "llvm/IR/Module.h"
 
+#include <fstream>
+
 using namespace llvm;
 
 class MutationGen: public FunctionPass{
@@ -23,7 +25,6 @@ public:
 
 	Module *TheModule;
 	static std::ofstream  ofresult; 
-	static std::string mutation_filepath;
 	MutationGen(Module *M);
 	virtual bool runOnFunction(Function &F);
 	static void genMutationFile(Function & F);
@@ -33,7 +34,7 @@ private:
 	static void genCOR();
 	static void genROR(Instruction *inst,StringRef fname, int index);
 	static void genSOR();
-	static void genSTD();
+	static void genSTD(Instruction *inst,StringRef fname, int index);
 	static void genLVR(Instruction *inst, StringRef fname, int index);
 };
 
