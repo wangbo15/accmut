@@ -1,5 +1,6 @@
 ## ignore the build dir ##
 build/
+release/
 
 ## ignore the build libs ##
 *.[oa]

@@ -29,7 +29,7 @@ using namespace std;
 ofstream  MutationGen::ofresult; 
 
 //the generating mutation's id 
-int mutation_id = 1;
+int mutation_id;
 
 #define ARITH_OP_NUM 7
 #define LOGIC_OP_NUM 6
@@ -43,7 +43,7 @@ MutationGen::MutationGen(Module *M) : FunctionPass(ID) {
 	string home = getenv("HOME");
 	stringstream ss;
 	ss<<home<<"/tmp/accmut/mutations.txt"; 
-	ofresult.open(ss.str(), ios::trunc); // TODO: init just once? 
+	ofresult.open(ss.str(), ios::app); // TODO: init just once? 
 	this->TheModule = M;
 }
 
@@ -55,7 +55,7 @@ bool MutationGen::runOnFunction(Function &F) {
 	if(F.getName().equals("main")){
 		return false;
 	}
-	errs()<<"====GENEARTING MUTATION FOR : "<<F.getName()<<" ========\n";
+	errs()<<"==== GENEARTING MUTATION FOR : "<<F.getName()<<" ========\n";
 	genMutationFile(F);
 	return false;
 }

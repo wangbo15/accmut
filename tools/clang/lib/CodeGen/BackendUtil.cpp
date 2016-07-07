@@ -689,9 +689,25 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
   // Run passes. For now we do all passes at once, but eventually we
   // would like to have the option of streaming code generation.
 
+	llvm::errs()<<">>>>> ENTERING MUDOLE : "<<TheModule->getName()<<" >>>>>\n";
+	
   if (PerFunctionPasses) {
 
 	//---------- add by wb -----------
+
+	std::string home = getenv("HOME");
+	std::stringstream ss;
+	ss<<home<<"/tmp/accmut/mutsnum.txt";
+	
+	std::ifstream in(ss.str());
+	int curmuts = 0;
+	in>>curmuts;
+	in.close();
+
+	if(curmuts == 0)
+		mutation_id = curmuts + 1; 
+	else
+		mutation_id = curmuts;
 
 	#if ACCMUT_GEN_MUT
 		mutationGen = new MutationGen(TheModule);
@@ -709,14 +725,12 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
     PerFunctionPasses->doFinalization();
 
 	#if ACCMUT_GEN_MUT
-		int generatedNum = mutation_id - 1;
+		int generatedNum = mutation_id - curmuts - 1;
 		llvm::errs()<<"###### TOTAL GENERATED "<<generatedNum<<" MUTATIONS ######\n";
-		std::string home = getenv("HOME");
-		std::stringstream ss;
-		ss<<home<<"/tmp/accmut/mutsnum.txt";
+
 		std::ofstream ofresult; 
 		ofresult.open(ss.str(), std::ios::trunc);
-		ofresult<<generatedNum<<'\n';
+		ofresult<<mutation_id<<'\n';
 		ofresult.close();
 	#endif 
 	
