@@ -21,15 +21,14 @@
 #include "llvm/Transforms/AccMut/MutationGen.h"
 
 #include <sstream>
-#include<cstdlib>
+#include <cstdlib>
+#include <ctime>
 
 using namespace llvm;
 using namespace std;
 
 ofstream  MutationGen::ofresult; 
 
-//the generating mutation's id 
-int mutation_id;
 
 #define ARITH_OP_NUM 7
 #define LOGIC_OP_NUM 6
@@ -72,25 +71,11 @@ void MutationGen::genMutationFile(Function & F){
 				continue;
 			}
 			/**************************/
+		#if 0	
 			if(opc == 55){		// TODO:: disable STD first
 				continue;
 			}
-
-/*
-			// TODO::
-			bool onlyI32I64 = true;
-			for(unsigned i = 0; i < BI->getNumOperands(); i++){//only mutation for instructions with i32 or i64 operands
-				Type* t = BI->getOperand(i)->getType();
-				if( !(t->isIntegerTy(32) || t->isIntegerTy(64))){
-					onlyI32I64 = false;
-					break;
-				}
-			}
-
-			if(!onlyI32I64){
-				continue;
-			}
-*/			
+		#endif
 			
 			genLVR(BI, F.getName(), index);
 			
@@ -102,10 +87,13 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::SDiv:
 				case Instruction::URem:
 				case Instruction::SRem:{
+					genUOI(BI, F.getName(), index);
+					genROV(BI, F.getName(), index);
 					genAOR(BI, F.getName(), index);
 					break;
 				}
 				case Instruction::ICmp:{
+					genUOI(BI, F.getName(), index);			
 					genROR(BI, F.getName(), index);
 					break;
 				}
@@ -115,13 +103,18 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::And:
 				case Instruction::Or:
 				case Instruction::Xor:{
+					genUOI(BI, F.getName(), index);
 					genLOR(BI, F.getName(), index);
 					break;
 				}
 				case Instruction::Call:
+					genROV(BI, F.getName(), index);
 					genSTD(BI, F.getName(), index);
 					break;
 				// TODO: genSTD for store
+				case Instruction::Store:{
+
+				}	
 				default:{
 					
 				}					
@@ -138,9 +131,8 @@ void MutationGen::genAOR(Instruction *inst, StringRef fname, int index){
 			continue;
 		}
 		std::stringstream ss;
-		ss<<mutation_id<<":AOR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+		ss<<"AOR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
 			<< ":"<<arith_opcodes[i]<<'\n';
-		mutation_id++;
 		ofresult<<ss.str();
 		ofresult.flush();
 	}
@@ -159,25 +151,22 @@ void MutationGen::genROR(Instruction *inst,StringRef fname, int index){
 	if(isPointerCmp){
 		if(predicate == CmpInst::ICMP_EQ){
 			std::stringstream ss;
-			ss<<mutation_id<<":ROR:"<<std::string(fname)<<":"<<index<<":"<<inst->getOpcode()<<":";
+			ss<<"ROR:"<<std::string(fname)<<":"<<index<<":"<<inst->getOpcode()<<":";
 			ss<<predicate<<":"<<CmpInst::ICMP_NE<<'\n';
-			mutation_id++;
 			ofresult<<ss.str();
 		}else if(predicate == CmpInst::ICMP_NE){
 			std::stringstream ss;
-			ss<<mutation_id<<":ROR:"<<std::string(fname)<<":"<<index<<":"<<inst->getOpcode()<<":";
+			ss<<"ROR:"<<std::string(fname)<<":"<<index<<":"<<inst->getOpcode()<<":";
 			ss<<predicate<<":"<<CmpInst::ICMP_EQ<<'\n';
 			ofresult<<ss.str();
-			mutation_id++;
 		}						
 	}else{
 		for(unsigned short i = CmpInst::FIRST_ICMP_PREDICATE; i <= CmpInst::LAST_ICMP_PREDICATE; i++){
 			if(i == predicate)
 				continue;
 			std::stringstream ss;
-			ss<<mutation_id<<":ROR:"<<std::string(fname)<<":"<<index<<":"
+			ss<<"ROR:"<<std::string(fname)<<":"<<index<<":"
 				<<inst->getOpcode()<<":"<<predicate<<":"<<i<<'\n';
-			mutation_id ++;
 			ofresult<<ss.str();
 		}
 	}
@@ -190,9 +179,8 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 			continue;
 		}
 		std::stringstream ss;
-		ss<<mutation_id<<":LOR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+		ss<<"LOR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
 			<< ":"<<logic_opcodes[i]<<'\n';
-		mutation_id++;
 		ofresult<<ss.str();
 		ofresult.flush();
 	}	
@@ -210,31 +198,45 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 	//tt->dump();
 	
 	if(tt->isIntegerTy(32)){
-		//1. if the func returns a int32 val, let it be 0
+		//1. if the func returns a int32 val, let it be 0, 1 or a random number
 		//errs()<<"IT IS A 32 !!\n";
 		std::stringstream ss;
-		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
-			<< ":"<<32<<'\n';
-		mutation_id++;
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<32<<":0\n";
+		
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<32<<":1\n";		
+		srand((int)time(0));
+		int random = rand();
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<32<<":"<<random<<"\n";
+		
 		ofresult<<ss.str();
 		ofresult.flush();
 	}else if(tt->isVoidTy()){
 		//2. if the func returns void, subsitute @llvm.donothing for the func
 		//errs()<<"IT IS A VOID !!\n";
 		std::stringstream ss;
-		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
 			<< ":"<<0<<'\n';
-		mutation_id++;
 		ofresult<<ss.str();
 		ofresult.flush();
 	}else if(tt->isIntegerTy(64)){
-		//1. if the func returns a int64 val, let it be 0
+		//1. if the func returns a int64 val, let it be 0, 1 or a random number
 		//errs()<<"IT IS A 64 !!\n";
 		std::stringstream ss;
-		ss<<mutation_id<<":STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
-			<< ":"<<64<<'\n';
-		mutation_id++;
-		ofresult<<ss.str();		
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<64<<":0\n";
+
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<64<<":1\n";
+		
+		srand((int)time(0));
+		int random = rand();
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<64<<":"<<random<<"\n";
+		
+		ofresult<<ss.str();	
 		ofresult.flush();
 	}
 	
@@ -252,101 +254,80 @@ void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 				if(CI->isZero()){
 					// TODO: how to confirm the int is signed or unsigned 
 					// 0 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<0<<":"<<1<<'\n';
-					mutation_id ++;
 					// 0 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<0<<":"<<-1<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();
 				}else if(CI->isOne()){
 					// 1 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<1<<":"<<0<<'\n';
-					mutation_id ++;	
 					// 1 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<1<<":"<<-1<<'\n';
-					mutation_id ++;					
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<1<<":"<<-1<<'\n';			
 					// 1 -> 2
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<1<<":"<<2<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();		
 				}else if(CI->isMinusOne()){
 					// -1 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-1<<":"<<0<<'\n';
-					mutation_id ++;		
 					// -1 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<-1<<":"<<1<<'\n';
-					mutation_id ++;						
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<-1<<":"<<1<<'\n';					
 					// -1 -> -2
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-1<<":"<<-2<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();		
 				}else if(CI->equalsInt((unsigned) -2)){
 					// -2 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<-2<<":"<<0<<'\n';
-					mutation_id ++;							
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<-2<<":"<<0<<'\n';					
 					// -2 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<1<<'\n';
-					mutation_id ++;				
 					// -2 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<-1<<'\n';
-					mutation_id ++;		
 					// -2 -> -3
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<-2<<":"<<-3<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();						
 				}else if(CI->equalsInt(2)){
 					// 2 -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<2<<":"<<0<<'\n';
-					mutation_id ++;							
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<2<<":"<<0<<'\n';					
 					// 2 -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<1<<'\n';
-					mutation_id ++;						
 					// 2 -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<2<<":"<<-1<<'\n';
-					mutation_id ++;						
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<2<<":"<<-1<<'\n';					
 					// 2 -> 3
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<2<<":"<<3<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();						
 				}else{
 				// T -> 0
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<0<<'\n';
-					mutation_id ++;;					
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<0<<'\n';				
 				// T -> 1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<1<<'\n';
-					mutation_id ++;					
 				// T -> -1
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<-1<<'\n';
-					mutation_id ++;				
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<-1<<'\n';			
 				// T -> T+1
 					int bigger = (int)*(CI->getValue().getRawData()) + 1;
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<bigger<<'\n';
-					mutation_id ++;					
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<bigger<<'\n';				
 				// T -> T-1
 					int smaller = (int)*(CI->getValue().getRawData()) -1;
-					ss<<mutation_id<<":LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+					ss<<"LVR:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
 						<<i<<":"<<CI->getValue().toString(10, true)<<":"<<smaller<<'\n';
-					mutation_id ++;
 					ofresult<<ss.str();	
 				}
 				ofresult.flush();
@@ -354,6 +335,52 @@ void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){
 
 	}
 }
+
+void MutationGen::genUOI(Instruction *inst, StringRef fname, int index){
+	for(unsigned i = 0; i < inst->getNumOperands(); i++){
+		Type* t = inst->getOperand(i)->getType();
+		if( t->isIntegerTy(32) || t->isIntegerTy(64)){
+			std::stringstream ss;
+			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<":"<<"INC\n";
+
+			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+				<<i<<":"<<"DEC\n";
+			
+			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+				<<i<<":"<<"NEG\n";
+			ofresult<<ss.str();	
+		}
+	}	
+	ofresult.flush();
+}
+void MutationGen::genROV(Instruction *inst, StringRef fname, int index){
+	int opc = inst->getOpcode();
+	if( opc == Instruction::Add || opc == Instruction::Mul){
+		return;//there is no need to exchange the oprand of a commutative instruction
+	}
+	for(unsigned i = 0; i < inst->getNumOperands(); i++){
+		Type* ti = inst->getOperand(i)->getType();
+		if( !(ti->isIntegerTy(32) || ti->isIntegerTy(64))){
+			continue;
+		}
+		for(unsigned j = i+1; j < inst->getNumOperands(); j++){
+			Type* tj = inst->getOperand(j)->getType();
+			if( !(tj->isIntegerTy(32) || tj->isIntegerTy(64))){
+				continue;
+			}
+/*			if(*(inst->getOperand(i)) == *(inst->getOperand(j))){
+				continue;
+			}*/
+			std::stringstream ss;
+			ss<<"ROV:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+				<<i<<":"<<j<<"\n";	
+			ofresult<<ss.str();	
+		}
+	}	
+	ofresult.flush();
+}
+
 
 /*------------------reserved begin-------------------*/
 void MutationGen::getAnalysisUsage(AnalysisUsage &AU) const {

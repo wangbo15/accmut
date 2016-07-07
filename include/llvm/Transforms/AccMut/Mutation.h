@@ -28,7 +28,9 @@ public:
 		MK_ROR,
 		MK_SOR,
 		MK_STD,
-		MK_LVR
+		MK_LVR,
+		MK_UOI,
+		MK_ROV
 	};
 public:	
 	int id;
@@ -68,7 +70,7 @@ public:
 };
 
 //COR
-//Conditional Operator Replacement, e.g. a || b ---> a && b, which is reduced into ROR
+//Conditional Operator Replacement, e.g. a || b ---> a && b, which is reduced into ROR and LOR
 class CORMut : public Mutation{
 public:
 	CORMut() : Mutation(MK_COR){}
@@ -120,6 +122,28 @@ public:
 	static bool classof(const Mutation *M) {
 		return M->getKind() == MK_LVR;
 	}		
+};
+
+//Unary Operation Insertion: b = a; ---> a++; b = a;
+class UOIMut : public Mutation{
+public:
+	int oper_index;
+	int ury_tp;
+	UOIMut() : Mutation(MK_UOI){}
+	static bool classof(const Mutation *M) {
+		return M->getKind() == MK_UOI;
+	}		
+};
+
+//Relacement of Operation Value: foo(a, b) ---> foo(b, a)
+class ROVMut : public Mutation{
+public:
+    int oper_index;
+    int tar_val;
+    ROVMut() : Mutation(MK_ROV){}
+    static bool classof(const Mutation *M) {
+        return M->getKind() == MK_ROV;
+    }       
 };
 
 

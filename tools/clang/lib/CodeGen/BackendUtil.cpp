@@ -631,7 +631,7 @@ bool EmitAssemblyHelper::AddEmitPasses(BackendAction Action,
 
 #if ACCMUT_GEN_MUT
 MutationGen *mutationGen;
-extern int mutation_id;
+
 #endif
 
 #if ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT
@@ -695,20 +695,6 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
 
 	//---------- add by wb -----------
 
-	std::string home = getenv("HOME");
-	std::stringstream ss;
-	ss<<home<<"/tmp/accmut/mutsnum.txt";
-	
-	std::ifstream in(ss.str());
-	int curmuts = 0;
-	in>>curmuts;
-	in.close();
-
-	if(curmuts == 0)
-		mutation_id = curmuts + 1; 
-	else
-		mutation_id = curmuts;
-
 	#if ACCMUT_GEN_MUT
 		mutationGen = new MutationGen(TheModule);
 		PerFunctionPasses->add(mutationGen);
@@ -724,15 +710,6 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
         PerFunctionPasses->run(F);
     PerFunctionPasses->doFinalization();
 
-	#if ACCMUT_GEN_MUT
-		int generatedNum = mutation_id - curmuts - 1;
-		llvm::errs()<<"###### TOTAL GENERATED "<<generatedNum<<" MUTATIONS ######\n";
-
-		std::ofstream ofresult; 
-		ofresult.open(ss.str(), std::ios::trunc);
-		ofresult<<mutation_id<<'\n';
-		ofresult.close();
-	#endif 
 	
   }
 
