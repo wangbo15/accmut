@@ -38,6 +38,7 @@ private:
 	static void genLVR(Instruction *inst, StringRef fname, int index);
     static void genUOI(Instruction *inst, StringRef fname, int index);
     static void genROV(Instruction *inst, StringRef fname, int index);
+    static void genABV(Instruction *inst, StringRef fname, int index);
 };
 
 

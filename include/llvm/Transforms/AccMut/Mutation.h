@@ -30,7 +30,8 @@ public:
 		MK_STD,
 		MK_LVR,
 		MK_UOI,
-		MK_ROV
+		MK_ROV,
+		MK_ABV
 	};
 public:	
 	int id;
@@ -128,7 +129,7 @@ public:
 class UOIMut : public Mutation{
 public:
 	int oper_index;
-	int ury_tp;
+	int ury_tp; //inc, dec or negation
 	UOIMut() : Mutation(MK_UOI){}
 	static bool classof(const Mutation *M) {
 		return M->getKind() == MK_UOI;
@@ -146,5 +147,14 @@ public:
     }       
 };
 
+//Relace a Value to its Absolute Value: a + b ---> abs(a) + b
+class ABVMut : public Mutation{
+public:
+    int oper_index;
+    ABVMut() : Mutation(MK_ABV){}
+    static bool classof(const Mutation *M) {
+        return M->getKind() == MK_ABV;
+    }       
+};
 
 #endif

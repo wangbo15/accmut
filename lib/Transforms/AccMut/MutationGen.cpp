@@ -77,8 +77,6 @@ void MutationGen::genMutationFile(Function & F){
 			}
 		#endif
 			
-			genLVR(BI, F.getName(), index);
-			
 			switch(opc){
 				case Instruction::Add:
 				case Instruction::Sub:
@@ -87,13 +85,17 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::SDiv:
 				case Instruction::URem:
 				case Instruction::SRem:{
+					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
+					genABV(BI, F.getName(), index);					
 					genAOR(BI, F.getName(), index);
 					break;
 				}
 				case Instruction::ICmp:{
-					genUOI(BI, F.getName(), index);			
+					genLVR(BI, F.getName(), index);
+					genUOI(BI, F.getName(), index);	
+					genABV(BI, F.getName(), index);			
 					genROR(BI, F.getName(), index);
 					break;
 				}
@@ -103,17 +105,25 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::And:
 				case Instruction::Or:
 				case Instruction::Xor:{
+					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
+					genABV(BI, F.getName(), index);					
 					genLOR(BI, F.getName(), index);
 					break;
 				}
 				case Instruction::Call:
+					genLVR(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
+					genABV(BI, F.getName(), index);					
 					genSTD(BI, F.getName(), index);
 					break;
 				// TODO: genSTD for store
 				case Instruction::Store:{
-
+					/*
+					genLVR(BI, F.getName(), index);
+					genABV(BI, F.getName(), index);	
+					genSTD(BI, F.getName(), index);
+					break;*/
 				}	
 				default:{
 					
@@ -380,6 +390,20 @@ void MutationGen::genROV(Instruction *inst, StringRef fname, int index){
 	}	
 	ofresult.flush();
 }
+
+void MutationGen::genABV(Instruction *inst, StringRef fname, int index){
+	for(unsigned i = 0; i < inst->getNumOperands(); i++){
+		Type* t = inst->getOperand(i)->getType();
+		if( t->isIntegerTy(32) || t->isIntegerTy(64)){
+			std::stringstream ss;
+			ss<<"ABV:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
+						<<i<<"\n";
+			ofresult<<ss.str();	
+		}
+	}	
+	ofresult.flush();	
+}
+
 
 
 /*------------------reserved begin-------------------*/
