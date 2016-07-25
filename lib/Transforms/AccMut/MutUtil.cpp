@@ -44,10 +44,11 @@ void MutUtil::getAllMutations(){
 		errs()<<"FILE ERROR : mutations.txt @ "<<path<<"\n";
 		exit(-1);
 	}
-	
+
+	int id = 1;
 	while( fin>>buf) { 
-		Mutation *m = getMutation(buf);
-		//AllMutsVector.push_back(m);
+		Mutation *m = getMutation(buf, id);
+		id++;
 		if(AllMutsMap.count(m->func) == 0){
 			AllMutsMap[m->func] = new vector<Mutation*>();
 		}
@@ -59,50 +60,40 @@ void MutUtil::getAllMutations(){
 	dumpAllMuts();
 }
 
-Mutation *MutUtil::getMutation(string line){
+Mutation *MutUtil::getMutation(string line, int id){
 	stringstream ss;
 	ss<<line;
-	int id;
 	string mtype, func;
-	int index;
-	ss>>id;
+	int index, sop;
 	char colon;
-	ss>>colon;
 	getline(ss, mtype, ':');
 	getline(ss, func, ':');
 	ss>>index;
+	ss>>colon;
+	ss>>sop;
 	ss>>colon;
 	
 	Mutation *m;
 	if(mtype == "AOR"){
 		AORMut *aor = new AORMut();
-		int sop, top;
-		ss>>sop;
-		ss>>colon;
+		int top;
 		ss>>top;
-		aor->src_op = sop;
 		aor->tar_op = top;
 		m = dyn_cast<Mutation>(aor);
 	}else if(mtype == "LOR"){
 		LORMut *lor = new LORMut();
-		int sop, top;
-		ss>>sop;
-		ss>>colon;
+		int top;
 		ss>>top;
-		lor->src_op = sop;
 		lor->tar_op = top;
 		m = dyn_cast<Mutation>(lor);
 	}else if(mtype == "COR"){
 
 	}else if(mtype == "ROR"){
 		RORMut *ror = new RORMut();
-		int op, sp, tp;
-		ss>>op;
-		ss>>colon;
+		int sp, tp;
 		ss>>sp;
 		ss>>colon;
 		ss>>tp;
-		ror->src_op = op;
 		ror->src_pre = sp;
 		ror->tar_pre = tp;
 		m = dyn_cast<Mutation>(ror);
@@ -110,28 +101,45 @@ Mutation *MutUtil::getMutation(string line){
 		
 	}else if(mtype == "STD"){
 		STDMut *std = new STDMut();
-		int op, type;
-		ss>>op;
-		ss>>colon;
+		int type;
 		ss>>type;
-		std->src_op = op;
 		std->func_ty = type;
 		m = dyn_cast<Mutation>(std);
 	}else if(mtype == "LVR"){
 		LVRMut *lvr = new LVRMut();
-		int op, oi, sc, tc;
-		ss>>op;
-		ss>>colon;		
+		int oi, sc, tc;	
 		ss>>oi;
 		ss>>colon;
 		ss>>sc;
 		ss>>colon;
 		ss>>tc;
-		lvr->src_op = op;
 		lvr->oper_index = oi;
 		lvr->src_const = sc;
 		lvr->tar_const = tc;
 		m = dyn_cast<Mutation>(lvr);
+	}else if(mtype == "UOI"){
+		UOIMut *uoi = new UOIMut();
+		int oi, ut;	
+		ss>>oi;
+		ss>>colon;
+		ss>>ut;
+		uoi->ury_tp = ut;
+		m = dyn_cast<Mutation>(uoi);
+	}else if (mtype == "ROV"){
+		ROVMut *rov = new ROVMut();
+		int op1, op2;
+		ss>>op1;
+		ss>>colon;
+		ss>>op2;
+		rov->op1 = op1;
+		rov->op2 = op2;
+		m = dyn_cast<Mutation>(rov);
+	}else if(mtype == "ABV"){
+		ABVMut *abv = new ABVMut();
+		int opindex;
+		ss>>opindex;
+		abv->oper_index;
+		m = dyn_cast<Mutation>(abv);
 	}else{
 		errs()<<"WRONG MUT TYPE !\n";
 		exit(-1);
@@ -140,6 +148,7 @@ Mutation *MutUtil::getMutation(string line){
 	m->type = mtype;
 	m->func = func;
 	m->index = index;
+	m->src_op = sop;
 	return m;
 }
 

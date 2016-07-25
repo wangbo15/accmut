@@ -11,3 +11,9 @@ tools/accmut/*.bk
 tools/accmut/test/*
 !tools/accmut/test/naive.c
 
+utils/llvm-build/llvmbuild/__init__.pyc
+utils/llvm-build/llvmbuild/componentinfo.pyc
+utils/llvm-build/llvmbuild/configutil.pyc
+utils/llvm-build/llvmbuild/main.pyc
+utils/llvm-build/llvmbuild/util.pyc
+

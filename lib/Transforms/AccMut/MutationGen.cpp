@@ -364,27 +364,53 @@ void MutationGen::genUOI(Instruction *inst, StringRef fname, int index){
 	}	
 	ofresult.flush();
 }
+
 void MutationGen::genROV(Instruction *inst, StringRef fname, int index){
 	int opc = inst->getOpcode();
 	if( opc == Instruction::Add || opc == Instruction::Mul){
 		return;//there is no need to exchange the oprand of a commutative instruction
 	}
-	for(unsigned i = 0; i < inst->getNumOperands(); i++){
+	unsigned uperbound = inst->getNumOperands();
+	
+	if(isa<CallInst>(inst)){//omit the callee of the CallInst
+		uperbound--;
+	}
+	
+	for(unsigned i = 0; i < uperbound; i++){
 		Type* ti = inst->getOperand(i)->getType();
-		if( !(ti->isIntegerTy(32) || ti->isIntegerTy(64))){
+
+		bool isIntpt = false;
+/**** for int pointer types
+		if(ti->isPointerTy()){
+			if(ti->getPointerElementType()->isIntegerTy()){
+				llvm::errs()<<*ti<<" ----->> "<<*ti->getPointerElementType()<<"\n";
+				isIntpt = true;
+			}
+		}
+*/		
+		if( !(ti->isIntegerTy(32) || ti->isIntegerTy(64) || isIntpt) ){
 			continue;
 		}
-		for(unsigned j = i+1; j < inst->getNumOperands(); j++){
+		for(unsigned j = i+1; j < uperbound; j++){
 			Type* tj = inst->getOperand(j)->getType();
-			if( !(tj->isIntegerTy(32) || tj->isIntegerTy(64))){
+
+			if(ti->getTypeID() != tj->getTypeID()){//only switch the same type
 				continue;
 			}
-/*			if(*(inst->getOperand(i)) == *(inst->getOperand(j))){
+			
+			isIntpt = false;
+			/*
+			if(tj->isPointerTy() && tj->getPointerElementType()->isIntegerTy() ){
+				isIntpt = true;;
+			}
+			*/
+			if(!(tj->isIntegerTy(32) || tj->isIntegerTy(64) || isIntpt) ){
 				continue;
-			}*/
+			}
+
 			std::stringstream ss;
 			ss<<"ROV:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-				<<i<<":"<<j<<"\n";	
+				<<i<<":"<<j<<"\n";
 			ofresult<<ss.str();	
 		}
 	}	
@@ -392,6 +418,7 @@ void MutationGen::genROV(Instruction *inst, StringRef fname, int index){
 }
 
 void MutationGen::genABV(Instruction *inst, StringRef fname, int index){
+
 	for(unsigned i = 0; i < inst->getNumOperands(); i++){
 		Type* t = inst->getOperand(i)->getType();
 		if( t->isIntegerTy(32) || t->isIntegerTy(64)){

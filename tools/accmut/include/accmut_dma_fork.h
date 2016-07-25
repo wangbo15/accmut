@@ -292,7 +292,10 @@ void __accmut__init(){
 	//perror("######### INIT END ####\n");
 }
 
-//////
+//must fellow the type seq: (i8 type, i8 index, i64* ptr ...)
+void __accmut__prepare_call(int from, int to, ...){
+	
+}
 
 int __accmut__process_call_i32(){
     return 0;
@@ -305,8 +308,6 @@ long __accmut__process_call_i64(){
 void __accmut__process_call_void(){
 
 }
-
-///////
 
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){

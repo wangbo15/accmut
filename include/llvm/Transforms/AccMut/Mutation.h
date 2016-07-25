@@ -139,8 +139,8 @@ public:
 //Relacement of Operation Value: foo(a, b) ---> foo(b, a)
 class ROVMut : public Mutation{
 public:
-    int oper_index;
-    int tar_val;
+    int op1;
+    int op2;
     ROVMut() : Mutation(MK_ROV){}
     static bool classof(const Mutation *M) {
         return M->getKind() == MK_ROV;

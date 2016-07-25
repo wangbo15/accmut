@@ -31,7 +31,7 @@ public:
 	static BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
 private:
 	static bool allMutsGeted;
-	static Mutation * getMutation(string line);
+	static Mutation * getMutation(string line, int id);
 };
 
 
