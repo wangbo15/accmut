@@ -68,9 +68,15 @@ struct rusage usage_cbegin, usage_cend;
 unsigned long long EXEC_INSTS = 0;
 /**********************************************************/
 
+#define MUTFILELINE 128
 
+#include <accmut_mut.h>
 
 #include <accmut/accmut_io.h>
+
+Mutation* ALLMUTS[MAXMUTNUM + 1];
+int MAX_MUT_NUM;
+int *MUTS_ON;
 
 
 
@@ -178,6 +184,105 @@ void __accmut__debug(int index){
 	if(index == 2){
 		perror("UNLINK ERR: ");
 	}
+}
+
+
+void __accmut__load_all_muts(){
+    char path[256];
+    strcpy(path, getenv("HOME"));
+    strcat(path, "/tmp/accmut/mutations.txt");
+	FILE *fp = fopen(path, "r");
+	if(fp == NULL){
+		fprintf(stderr, "FILE ERROR: mutation.txt CAN NOT OPEN !!! PATH: %s\n", path);
+		exit(0);
+	}
+	int id = 1;	
+	char type[4];
+	char buff[MUTFILELINE];	
+	char tail[40];
+	while(fgets(buff, MUTFILELINE, fp)){
+		//fprintf(stderr, "%s", buff);
+		sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
+
+		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
+		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
+		if(!strcmp(type, "AOR")){
+			m->type = AOR;
+			int s_op, t_op;
+			sscanf(tail, "%d:%d", &s_op, &t_op);
+			m->sop = s_op;
+			m->op_0 = t_op;
+		}else if(!strcmp(type, "LOR")){
+			m->type = LOR;
+			int s_op, t_op;
+			sscanf(tail, "%d:%d", &s_op, &t_op);
+			m->sop = s_op;
+			m->op_0 = t_op;
+		}else if(!strcmp(type, "ROR")){
+			m->type = ROR;
+			int op, s_pre, t_pre;
+			sscanf(tail, "%d:%d:%d", &op, &s_pre, &t_pre);
+			m->sop = op;
+			m->op_1 = s_pre;
+			m->op_2 = t_pre;
+		}else if(!strcmp(type, "STD")){
+			m->type = STD;
+			int op, f_tp, retval;
+			if(strlen(tail) == 4){//return void 
+				sscanf(tail, "%d:%d", &op, &f_tp);
+				m->sop = op;	//must be 0
+				m->op_1 = f_tp;
+			}else{//return i32 or i64
+				sscanf(tail, "%d:%d:%d", &op, &f_tp, &retval);
+				m->sop = op;
+				m->op_1 = f_tp;	//32, or 64
+				m->op_2 = retval;
+			}
+		}else if(!strcmp(type, "LVR")){
+			m->type = LVR;
+			int op, op_i;
+			long s_c, t_c;
+			sscanf(tail, "%d:%d:%ld:%ld", &op, &op_i, &s_c, &t_c);
+			m->sop = op;
+			m->op_0 = op_i;
+			m->op_1 = s_c;
+			m->op_2 = t_c;
+		}else if(!strcmp(type, "UOI")){
+			m->type = UOI;
+			int op, op_i, tp;
+			sscanf(tail, "%d:%d:%d", &op, &op_i, &tp);
+			m->sop = op;
+			m->op_1 = op_i;
+			m->op_2 = tp;
+		}else if(!strcmp(type, "ROV")){
+			m->type = ROV;
+			int op, op1, op2;
+			sscanf(tail, "%d:%d:%d", &op, &op1, &op2);
+			m->sop = op;
+			m->op_1 = op1;
+			m->op_2 = op2;
+		}else if(!strcmp(type, "ABV")){
+			m->type = ABV;
+			int idx;
+			sscanf(tail, "%d:%d", &op, &idx);
+			m->sop = op;
+			m->op_0 = idx;
+		}else{
+			fprintf(stderr, "ERROR MUT TYPE: %d:%s\n", id, buff);
+			exit(0);
+		}
+		ALLMUTS[id] = m;
+		id++;
+	}
+	MAX_MUT_NUM = id - 1;
+
+	#if 0
+	int i;
+	for(i = 1; i <= MAX_MUT_NUM; i++){
+		Mutation *m = ALLMUTS[i];
+		fprintf(stderr, "");
+	}
+	#endif
 }
 
 /****************************************************************/

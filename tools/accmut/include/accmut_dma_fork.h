@@ -18,36 +18,6 @@
 
 #include <accmut/accmut_arith_common.h>
 
-#define MUTFILELINE 128
-
-typedef enum MTYPE{
-	AOR,
-	LOR,
-	COR,
-	ROR,
-	SOR,
-	STD,
-	LVR
-}MType;
-
-typedef struct Mutation{
-	MType type;
-	int op;
-	//for AOR, LOR
-	int t_op;
-	//for ROR
-	int s_pre;
-	int t_pre;
-	//for STD
-	int f_tp;
-	//for LVR
-	int op_index;
-	long s_con;		// TODO: 'long' is enough ?
-	long t_con;
-}Mutation;
-
-Mutation* ALLMUTS[MAXMUTNUM + 1];
-
 
 /** Added By Shiyqw **/
 
@@ -228,63 +198,12 @@ void __accmut__init(){
 
     //signal(SIGSEGV, __accmut__SIGSEGV__handler);
 
-    char path[256];
-    strcpy(path, getenv("HOME"));
-    strcat(path, "/tmp/accmut/mutations.txt");
-	FILE *fp = fopen(path, "r");
-	if(fp == NULL){
-		fprintf(stderr, "FILE ERROR: mutation.txt CAN NOT OPEN !!! PATH: %s\n", path);
-		exit(0);
-	}
-	int id;	
-	char type[4];
-	char buff[MUTFILELINE];	
-	char tail[40];
-	while(fgets(buff, MUTFILELINE, fp)){
-		//fprintf(stderr, "%s", buff);
-		sscanf(buff, "%d:%3s:%*[^:]:%*[^:]:%s", &id, type, tail);
+    if(TEST_ID < 0){
+        fprintf(stderr, "TEST_ID NOT INIT\n");
+        exit(0);
+    }
 
-		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
-		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
-		if(!strcmp(type, "AOR")){
-			m->type = AOR;
-			int s_op, t_op;
-			sscanf(tail, "%d:%d", &s_op, &t_op);
-			m->op = s_op;
-			m->t_op = t_op;
-
-		}else if(!strcmp(type, "LOR")){
-			m->type = LOR;
-			int s_op, t_op;
-			sscanf(tail, "%d:%d", &s_op, &t_op);
-			m->op = s_op;
-			m->t_op = t_op;
-		}else if(!strcmp(type, "ROR")){
-			m->type = ROR;
-			int op, s_pre, t_pre;
-			sscanf(tail, "%d:%d:%d", &op, &s_pre, &t_pre);
-			m->op = op;
-			m->s_pre = s_pre;
-			m->t_pre = t_pre;
-		}else if(!strcmp(type, "STD")){
-			m->type = STD;
-			int op, f_tp;
- 			sscanf(tail, "%d:%d", &op, &f_tp);
-			m->op = op;
-			m->f_tp=f_tp;
-		}else if(!strcmp(type, "LVR")){
-			m->type = LVR;
-			int op, op_i;
-			long s_c, t_c;
-			sscanf(tail, "%d:%d:%ld:%ld", &op, &op_i, &s_c, &t_c);
-			m->op = op;
-            m->t_op = op;
-			m->op_index = op_i;
-			m->s_con = s_c;
-			m->t_con = t_c;
-		}	
-		ALLMUTS[id] = m;
-	}
+    __accmut__load_all_muts();
 
     int i;
     for(i = 0; i <= MAXMUTNUM; ++i) default_active_set[i] = 1;

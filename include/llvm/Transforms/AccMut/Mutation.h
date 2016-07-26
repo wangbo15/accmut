@@ -129,7 +129,7 @@ public:
 class UOIMut : public Mutation{
 public:
 	int oper_index;
-	int ury_tp; //inc, dec or negation
+	int ury_tp; //inc:0, dec:1 or negation:2
 	UOIMut() : Mutation(MK_UOI){}
 	static bool classof(const Mutation *M) {
 		return M->getKind() == MK_UOI;

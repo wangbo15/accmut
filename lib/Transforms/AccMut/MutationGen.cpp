@@ -95,6 +95,7 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::ICmp:{
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);	
+					genROV(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);			
 					genROR(BI, F.getName(), index);
 					break;
@@ -107,12 +108,14 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::Xor:{
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
+					genROV(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);					
 					genLOR(BI, F.getName(), index);
 					break;
 				}
 				case Instruction::Call:
 					genLVR(BI, F.getName(), index);
+					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);					
 					genSTD(BI, F.getName(), index);
@@ -216,10 +219,10 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 		
 		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
 			<< ":"<<32<<":1\n";		
-		srand((int)time(0));
-		int random = rand();
+		//srand((int)time(0));
+		//int random = rand();
 		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
-			<< ":"<<32<<":"<<random<<"\n";
+			<< ":"<<32<<":"<<-1<<"\n";
 		
 		ofresult<<ss.str();
 		ofresult.flush();
@@ -352,13 +355,13 @@ void MutationGen::genUOI(Instruction *inst, StringRef fname, int index){
 		if( t->isIntegerTy(32) || t->isIntegerTy(64)){
 			std::stringstream ss;
 			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-						<<i<<":"<<"INC\n";
+				<<i<<":"<<"0\n";	//inc
 
 			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-				<<i<<":"<<"DEC\n";
+				<<i<<":"<<"1\n";	//dec
 			
 			ss<<"UOI:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()<<":"
-				<<i<<":"<<"NEG\n";
+				<<i<<":"<<"2\n";	//neg
 			ofresult<<ss.str();	
 		}
 	}	
