@@ -373,7 +373,7 @@ static void test(Function &F){
 
 				ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 			
-				ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
+				ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
 			
 				BasicBlock *cur_bb = cur_it->getParent();
 				
@@ -599,7 +599,7 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			
 			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 			
-			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
+			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
 			
 			BasicBlock *cur_bb = cur_it->getParent();
 			
@@ -707,7 +707,7 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 
 			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 		
-			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
+			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
 		
 			BasicBlock *cur_bb = cur_it->getParent();
 			

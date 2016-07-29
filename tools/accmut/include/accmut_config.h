@@ -152,11 +152,11 @@ void __accmut__sepcific_timer(){
 	strcat(path, "/tmp/accmut/oritime.txt");
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
-		fprintf(stderr, "ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
+		fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
 		//if the ori time file does not exisit, use the default timer value.
 		VALUE_SEC = 0;
-		VALUE_USEC = 120;
-		//exit(0);
+		VALUE_USEC = 5000;
+		return;
 	}
 	//TODO::optimize
 	int i;
@@ -201,7 +201,7 @@ void __accmut__load_all_muts(){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 
-		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
+		fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
 		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
 		if(!strcmp(type, "AOR")){
 			m->type = AOR;
@@ -274,10 +274,12 @@ void __accmut__load_all_muts(){
 	MAX_MUT_NUM = id - 1;
 
 	#if 0
+	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MAX_MUT_NUM);
 	int i;
 	for(i = 1; i <= MAX_MUT_NUM; i++){
 		Mutation *m = ALLMUTS[i];
-		fprintf(stderr, "");
+		fprintf(stderr, "%d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
+			 i, m->type, m->op_0, m->op_1, m->op_2);
 	}
 	#endif
 }

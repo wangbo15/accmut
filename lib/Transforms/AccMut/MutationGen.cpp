@@ -201,6 +201,12 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 void MutationGen::genSTDCall(Instruction * inst, StringRef fname, int index){
 
 	CallInst *call = cast<CallInst>(inst);
+
+	Function *fun = call->getCalledFunction();
+
+	if(fun->getName().startswith("llvm")){
+		return;
+	}
 	
 	Type *t = call->getCalledValue()->getType();
 

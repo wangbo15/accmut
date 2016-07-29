@@ -82,9 +82,9 @@ void __accmut__init(){
 		*(MUTS_ON + i) = 1;
 	}
     
-   	for(i = 1; i < MAX_MUT_NUM + 1; i++){
-		__accmut__mainfork(i);
-	}
+ //   	for(i = 1; i < MAX_MUT_NUM + 1; i++){
+	// 	__accmut__mainfork(i);
+	// }
 	
 
 	/*if(MUTATION_ID == 0){
