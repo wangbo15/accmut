@@ -203,6 +203,7 @@ static void test(Function &F){
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
 		BasicBlock *BB = FI;
 		for(BasicBlock::iterator cur_it = BB->begin(); cur_it != BB->end(); ++cur_it){
+			#if 0
 			if(dyn_cast<CallInst>(&*cur_it)){
 
 				//move all constant literal int to repalce to alloca
@@ -321,6 +322,89 @@ static void test(Function &F){
 				return;
 
 			}
+			#endif
+
+			if(StoreInst* st = dyn_cast<StoreInst>(&*cur_it)){
+
+				Module* TheModule = F.getParent();
+				
+				if(ConstantInt* cons = dyn_cast<ConstantInt>(st->getValueOperand())){
+						AllocaInst *alloca = new AllocaInst(cons->getType(), "cons_alias", st);
+						StoreInst *str = new StoreInst(cons, alloca, st);
+						LoadInst *ld = new LoadInst(alloca, "const_load", st);
+						User::op_iterator OI = st->op_begin();
+						*OI = (Value*) ld;
+				}
+
+				Function* prestfunc;
+				if(st->getValueOperand()->getType()->isIntegerTy(32)){
+					prestfunc = TheModule->getFunction("__accmut__prepare_st_i32");
+				}
+				else if(st->getValueOperand()->getType()->isIntegerTy(64)){
+					prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
+				}else{
+					llvm::errs()<<"ERR STORE TYPE @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+					exit(0);
+				}
+				
+				std::vector<Value*> params;
+				std::stringstream ss;
+				ss<<0;
+				ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), 
+						APInt(32, StringRef(ss.str()), 10)); 
+				params.push_back(from_i32);
+				ss.str("");
+				ss<<1;
+				ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(),
+					APInt(32, StringRef(ss.str()), 10));
+				params.push_back(to_i32);
+				
+				auto OI = st->op_begin() + 1;
+				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
+					params.push_back(ld->getPointerOperand());
+				}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){
+					params.push_back(alloca);
+				}else{
+					llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+					exit(0);
+				}
+
+				CallInst *pre = CallInst::Create(prestfunc, params, "", cur_it);
+
+				ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
+			
+				ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
+			
+				BasicBlock *cur_bb = cur_it->getParent();
+				
+				Instruction* orist = cur_it->clone();
+				
+				BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "if.end");
+				
+				BasicBlock* label_if_then = BasicBlock::Create(TheModule->getContext(), "if.then",cur_bb->getParent(), label_if_end);
+				BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "if.else",cur_bb->getParent(), label_if_end);
+				
+				cur_bb->back().eraseFromParent();
+				
+				BranchInst::Create(label_if_then, label_if_else, hasstd, cur_bb);
+
+				//label_if_then
+				label_if_then->getInstList().push_back(orist);
+				BranchInst::Create(label_if_end, label_if_then);	
+
+				//label_if_else
+				Function *std_handle = TheModule->getFunction("__accmut__std_store");
+				CallInst*  stdcall = CallInst::Create(std_handle, "", label_if_else);
+				stdcall->setCallingConv(CallingConv::C);
+				stdcall->setTailCall(false);
+				AttributeSet stdcallPAL;
+				stdcall->setAttributes(stdcallPAL);
+				BranchInst::Create(label_if_end, label_if_else);
+
+				//label_if_end
+				cur_it->eraseFromParent();
+				return;
+			}
 		}
 	}	
 }
@@ -338,10 +422,10 @@ bool SMAInstrumenter::runOnFunction(Function & F){
 		return false;
 	}
 
-	errs()<<"\n######## SMA INSTRUMTNTING MUT  @"<<F.getName()<<"  ########\n\n";	
+	errs()<<"\n######## SMA INSTRUMTNTING MUT  @"<<TheModule->getName()<<"->"<<F.getName()<<"  ########\n\n";	
 
-	//instrument(F, v);
-	test(F);
+	instrument(F, v);
+	//test(F);
 
 	return true;
 }
@@ -378,7 +462,7 @@ int getTypeMacro(Type *t){
 				res = LONG_TP;
 				break;
 			default:
-				llvm::errs()<<"TYPE ERROR @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+				llvm::errs()<<"TYPE ERROR @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
 				exit(0);
 		}
 	}
@@ -430,6 +514,10 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				break;
 			}
 		}
+
+/*		for(auto I = tmp.begin(); I != tmp.end(); I++){
+			(*I)->dump();
+		}*/
 		
 		cur_it =  getLocation(F, instrumented_insts, tmp[0]->index);
 		
@@ -438,6 +526,9 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		int mut_from, mut_to;
 		mut_from = tmp.front()->id;
 		mut_to = tmp.back()->id;
+
+		llvm::errs()<<"CURRENT INST :\t"<<*cur_it<<"\tFROM : "
+			<<mut_from<<"\tTO : "<<mut_to<<"\n";
 		
 		if(dyn_cast<CallInst>(&*cur_it)){
 			//move all constant literal int to repalce to alloca
@@ -485,8 +576,10 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				//now push the pointer of idx'th param
 				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
 					params.push_back(ld->getPointerOperand());
+				}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){// a param of the F, fetch it by alloca
+					params.push_back(alloca);
 				}else{
-					llvm::errs()<<"NOT A LOADINST @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+					llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
 					exit(0);
 				}
 				record_num++;
@@ -497,9 +590,13 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			ConstantInt* rcd = ConstantInt::get(TheModule->getContext(), 
 					APInt(32, StringRef(ss.str()), 10)); 
 			params.insert( params.begin()+2 , rcd);
-	
-			CallInst *pre = CallInst::Create(precallfunc, params, "", cur_it);
 
+			CallInst *pre = CallInst::Create(precallfunc, params, "", cur_it);
+			pre->setCallingConv(CallingConv::C);
+			pre->setTailCall(false);
+			AttributeSet preattrset;
+			pre->setAttributes(preattrset);
+			
 			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 			
 			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
@@ -524,13 +621,13 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			//label_if_else
 			Function *std_handle;
 			if(oricall->getType()->isIntegerTy(32)){
-				std_handle = TheModule->getFunction("__accmut__std_i32");
+				std_handle = TheModule->getFunction("__accmut__stdcall_i32");
 			}else if(oricall->getType()->isIntegerTy(64)){
-				std_handle = TheModule->getFunction("__accmut__std_i64");
+				std_handle = TheModule->getFunction("__accmut__stdcall_i64");
 			}else if(oricall->getType()->isVoidTy()){
-				std_handle = TheModule->getFunction("__accmut__std_void");
+				std_handle = TheModule->getFunction("__accmut__stdcall_void");
 			}else{
-				llvm::errs()<<"ERR CALL TYPE @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+				llvm::errs()<<"ERR CALL TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
 				exit(0);
 			}
 			
@@ -543,7 +640,7 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			
 			//label_if_end
 			if(oricall->getType()->isVoidTy()){
-				cur_it->removeFromParent();
+				cur_it->eraseFromParent();
 				
 				instrumented_insts += 6;
 			}
@@ -557,11 +654,93 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			}
 
 		}
-		#if 0
-		else if(dyn_cast<StoreInst>(&*cur_it)){
+		
+		else if(StoreInst* st = dyn_cast<StoreInst>(&*cur_it)){
+			if(ConstantInt* cons = dyn_cast<ConstantInt>(st->getValueOperand())){
+					AllocaInst *alloca = new AllocaInst(cons->getType(), "cons_alias", st);
+					StoreInst *str = new StoreInst(cons, alloca, st);
+					LoadInst *ld = new LoadInst(alloca, "const_load", st);
+					User::op_iterator OI = st->op_begin();
+					*OI = (Value*) ld;
+					instrumented_insts += 3;
+			}
 
+			Function* prestfunc;
+			if(st->getValueOperand()->getType()->isIntegerTy(32)){
+				prestfunc = TheModule->getFunction("__accmut__prepare_st_i32");
+			}
+			else if(st->getValueOperand()->getType()->isIntegerTy(64)){
+				prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
+			}else{
+				llvm::errs()<<"ERR STORE TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				exit(0);
+			}
 			
-		}else{
+			std::vector<Value*> params;
+			std::stringstream ss;
+			ss<<mut_from;
+			ConstantInt* from_i32= ConstantInt::get(TheModule->getContext(), 
+					APInt(32, StringRef(ss.str()), 10)); 
+			params.push_back(from_i32);
+			ss.str("");
+			ss<<mut_to;
+			ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(),
+				APInt(32, StringRef(ss.str()), 10));
+			params.push_back(to_i32);
+			
+			auto OI = st->op_begin() + 1;// the pointer of the storeinst
+			if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
+				params.push_back(ld->getPointerOperand());
+			}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){
+				params.push_back(alloca);
+			}else{
+				llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				Value *v = dyn_cast<Value>(&*OI);
+				v->dump();
+				exit(0);
+			}
+			CallInst *pre = CallInst::Create(prestfunc, params, "", cur_it);
+			pre->setCallingConv(CallingConv::C);
+			pre->setTailCall(false);
+			AttributeSet attrset;
+			pre->setAttributes(attrset);
+
+			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
+		
+			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_NE, pre, zero, "hasstd");
+		
+			BasicBlock *cur_bb = cur_it->getParent();
+			
+			Instruction* orist = cur_it->clone();
+			
+			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "if.end");
+			
+			BasicBlock* label_if_then = BasicBlock::Create(TheModule->getContext(), "if.then",cur_bb->getParent(), label_if_end);
+			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "if.else",cur_bb->getParent(), label_if_end);
+			
+			cur_bb->back().eraseFromParent();
+			
+			BranchInst::Create(label_if_then, label_if_else, hasstd, cur_bb);
+
+			//label_if_then
+			label_if_then->getInstList().push_back(orist);
+			BranchInst::Create(label_if_end, label_if_then);	
+
+			//label_if_else
+			Function *std_handle = TheModule->getFunction("__accmut__std_store");
+			CallInst*  stdcall = CallInst::Create(std_handle, "", label_if_else);
+			stdcall->setCallingConv(CallingConv::C);
+			stdcall->setTailCall(false);
+			AttributeSet stdcallPAL;
+			stdcall->setAttributes(stdcallPAL);
+			BranchInst::Create(label_if_end, label_if_else);
+
+			//label_if_end
+			cur_it->eraseFromParent();	
+			instrumented_insts += 6;
+		}
+		#if 0
+		else{
 			// FOR ARITH INST
 			if(cur_it->getOpcode() >= Instruction::Add && 
 				cur_it->getOpcode() <= Instruction::Xor){ 

@@ -45,6 +45,10 @@ public:
 	MutationKind getKind() const{ return Kind;}
 	Mutation(){}
 	Mutation(MutationKind K) : Kind(K){}
+    void dump(){
+        llvm::errs()<<"\tID: "<<this->id<<"\tTYPE: "<<this->type<<" \tFUNC: "<<this->func
+				<<"\tINDEX: "<<this->index<<"\tS_OP: "<<this->src_op<<'\n';
+    }
 };
 
 //AOR

@@ -42,7 +42,7 @@ MutationGen::MutationGen(Module *M) : FunctionPass(ID) {
 	string home = getenv("HOME");
 	stringstream ss;
 	ss<<home<<"/tmp/accmut/mutations.txt"; 
-	ofresult.open(ss.str(), ios::app); // TODO: init just once? 
+	ofresult.open(ss.str(), ios::app); 
 	this->TheModule = M;
 }
 
@@ -118,15 +118,14 @@ void MutationGen::genMutationFile(Function & F){
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);					
-					genSTD(BI, F.getName(), index);
+					genSTDCall(BI, F.getName(), index);
 					break;
-				// TODO: genSTD for store
 				case Instruction::Store:{
-					/*
 					genLVR(BI, F.getName(), index);
+					genUOI(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);	
-					genSTD(BI, F.getName(), index);
-					break;*/
+					genSTDStore(BI, F.getName(), index);
+					break;
 				}	
 				default:{
 					
@@ -199,7 +198,7 @@ void MutationGen::genLOR(Instruction *inst, StringRef fname, int index){
 	}	
 }
 
-void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
+void MutationGen::genSTDCall(Instruction * inst, StringRef fname, int index){
 
 	CallInst *call = cast<CallInst>(inst);
 	
@@ -244,16 +243,30 @@ void MutationGen::genSTD(Instruction * inst, StringRef fname, int index){
 		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
 			<< ":"<<64<<":1\n";
 		
-		srand((int)time(0));
-		int random = rand();
+		//srand((int)time(0));
+		//int random = rand();
 		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
-			<< ":"<<64<<":"<<random<<"\n";
+			<< ":"<<64<<":"<<-1<<"\n";
 		
 		ofresult<<ss.str();	
 		ofresult.flush();
 	}
 	
 }
+
+void MutationGen::genSTDStore(Instruction * inst, StringRef fname, int index){
+	StoreInst *st = cast<StoreInst>(inst);
+	Type * t = st->getValueOperand()->getType();
+	if(t->isIntegerTy(32) || t->isIntegerTy(64)){
+		std::stringstream ss;
+		ss<<"STD:"<<std::string(fname)<<":"<<index<< ":"<<inst->getOpcode()
+			<< ":"<<0<<'\n';
+		ofresult<<ss.str();
+		ofresult.flush();
+	}
+}
+
+
 
 // for a numeral value T, LVR will generate 4 mut: 0, 1, -1, T+1, T-1 
 void MutationGen::genLVR(Instruction *inst, StringRef fname, int index){

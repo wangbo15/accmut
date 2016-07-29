@@ -1,3 +1,5 @@
+#if 0
+
 #ifndef ACCMUT_SMA_EVAL_H
 #define ACCMUT_SMA_EVAL_H
 
@@ -350,3 +352,4 @@ void __accmut__eval_analysis(){
 
 #endif
 
+#endif

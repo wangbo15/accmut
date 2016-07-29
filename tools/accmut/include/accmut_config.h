@@ -19,14 +19,11 @@
 #include <fcntl.h>
 
 
-//USELESS SWITCH
-#define ACCMUT_GEN_MUT 0
-
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 0
+#define ACCMUT_MUTATION_SCHEMATA 1
 
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 1
+#define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
@@ -70,7 +67,7 @@ unsigned long long EXEC_INSTS = 0;
 
 #define MUTFILELINE 128
 
-#include <accmut_mut.h>
+#include <accmut/accmut_mut.h>
 
 #include <accmut/accmut_io.h>
 
@@ -263,7 +260,7 @@ void __accmut__load_all_muts(){
 			m->op_2 = op2;
 		}else if(!strcmp(type, "ABV")){
 			m->type = ABV;
-			int idx;
+			int op, idx;
 			sscanf(tail, "%d:%d", &op, &idx);
 			m->sop = op;
 			m->op_0 = idx;

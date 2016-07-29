@@ -92,6 +92,11 @@ void __accmut__init(){
 	}*/
 }
 
+//TYPE BITS OF SIGNATURE
+#define CHAR_TP 0
+#define SHORT_TP 1
+#define INT_TP 2
+#define LONG_TP 3
 
 typedef struct PrepareCallParam{
 	int type;
@@ -99,6 +104,10 @@ typedef struct PrepareCallParam{
 }PrepareCallParam;
 
 int __accmut__prepare_call(int from, int to, int opnum, ...){
+
+	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		return 0;
+	}
 
 	Mutation *m = ALLMUTS[MUTATION_ID];
 
@@ -119,9 +128,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 		params[idx].type = tp_and_idx >> 8;
 		params[idx].address = va_arg(ap, unsigned long);
 
-		fprintf(stderr, "%dth: %d %d\n", i, type, idx);
-
-		fprintf(stderr, "%dth: %d\n", i, *((int*)ptrs[i]));
+		//fprintf(stderr, "%dth: %d\n", i, *((int*)ptrs[i]));
 
 	}
 	va_end(ap);
@@ -133,23 +140,34 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 
 			switch(params[idx].type){
 				case CHAR_TP:
+				{
 					char *ptr = (char *) params[idx].address;
-					*ptr = op_2;
+					*ptr = m->op_2;
 					break;
+				}
 				case SHORT_TP:
+				{
 					short *ptr = (short *) params[idx].address;
-					*ptr = op_2;
+					*ptr = m->op_2;
 					break;
+				}
 				case INT_TP:
+				{
 					int *ptr = (int *) params[idx].address;
-					*ptr = op_2;
-					break;			
-				case LONG_TP:
-					long *ptr = (long *) params[idx].address;
-					*ptr = op_2;
+					*ptr = m->op_2;
 					break;
+				}	
+				case LONG_TP:
+				{
+					long *ptr = (long *) params[idx].address;
+					*ptr = m->op_2;
+					break;
+				}
 				default:
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);		
+				{
+					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					exit(0);
+				}
 			}
 
 			break;
@@ -157,10 +175,11 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 		case UOI:
 		{
 			int idx = m->op_1;
-			int uoi_tp = m->op2;
+			int uoi_tp = m->op_2;
 
 			switch(params[idx].type){
 				case CHAR_TP:
+				{
 					char *ptr = (char *) params[idx].address;
 					if(uoi_tp == 0){
 						*ptr = *ptr + 1;
@@ -170,7 +189,9 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						*ptr = 0 - *ptr;
 					}
 					break;
+				}
 				case SHORT_TP:
+				{
 					short *ptr = (short *) params[idx].address;
 					if(uoi_tp == 0){
 						*ptr = *ptr + 1;
@@ -180,7 +201,9 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						*ptr = 0 - *ptr;
 					}
 					break;
+				}
 				case INT_TP:
+				{
 					int *ptr = (int *) params[idx].address;
 					if(uoi_tp == 0){
 						*ptr = *ptr + 1;
@@ -189,8 +212,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 					}else if(uoi_tp == 2){
 						*ptr = 0 - *ptr;
 					}
-					break;			
+					break;
+				}		
 				case LONG_TP:
+				{
 					long *ptr = (long *) params[idx].address;
 					if(uoi_tp == 0){
 						*ptr = *ptr + 1;
@@ -200,8 +225,12 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						*ptr = 0 - *ptr;
 					}
 					break;
+				}
 				default:
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);		
+				{
+					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					exit(0);
+				}
 			}
 
 			break;
@@ -213,138 +242,192 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 			//op1
 			switch(params[idx1].type){
 				case CHAR_TP:
+				{
 					char *ptr1 = (char *) params[idx1].address;
 					//op2
 					switch(params[idx2].type){
 						case CHAR_TP:
+						{
 							char *ptr2 = (char *) params[idx2].address;
 							char tmp = *ptr1;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case SHORT_TP:
+						{
 							short *ptr2 = (short *) params[idx2].address;
 							char tmp = (char) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						case INT_TP:
+						{
 							int *ptr2 = (int *) params[idx2].address;
 							char tmp = (char) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						case LONG_TP:
+						{
 							long *ptr2 = (long *) params[idx2].address;
 							char tmp = (char) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						default:
+						{
 							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							exit(0);
+						}
 					}
 
 					break;
+				}
 				case SHORT_TP:
+				{
 					short *ptr1 = (short *) params[idx1].address;
 					//op2
 					switch(params[idx2].type){
 						case CHAR_TP:
+						{
 							char *ptr2 = (char *) params[idx2].address;
 							char tmp = (short)*ptr1;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case SHORT_TP:
+						{
 							short *ptr2 = (short *) params[idx2].address;
 							short tmp = *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						case INT_TP:
+						{
 							int *ptr2 = (int *) params[idx2].address;
 							short tmp = (short) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						case LONG_TP:
+						{
 							long *ptr2 = (long *) params[idx2].address;
 							short tmp = (short) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						default:
+						{
 							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							exit(0);
+						}
 					}
 
 					break;
+				}
 				case INT_TP:
+				{
 					int *ptr1 = (int *) params[idx1].address;
 					//op2
 					switch(params[idx2].type){
 						case CHAR_TP:
+						{
 							char *ptr2 = (char *) params[idx2].address;
 							char tmp = (char)*ptr1;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case SHORT_TP:
+						{
 							short *ptr2 = (short *) params[idx2].address;
 							short tmp = *ptr2;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case INT_TP:
+						{
 							int *ptr2 = (int *) params[idx2].address;
 							int tmp = *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						case LONG_TP:
+						{
 							long *ptr2 = (long *) params[idx2].address;
 							int tmp = (int) *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						default:
+						{
 							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+						}
 					}
 
 					break;
+				}
 				case LONG_TP:
+				{
 					long *ptr1 = (long *) params[idx1].address;
 					//op2
 					switch(params[idx2].type){
 						case CHAR_TP:
+						{
 							char *ptr2 = (char *) params[idx2].address;
 							char tmp = (char)*ptr1;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case SHORT_TP:
+						{
 							short *ptr2 = (short *) params[idx2].address;
 							short tmp = (short) *ptr1;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case INT_TP:
+						{
 							int *ptr2 = (int *) params[idx2].address;
 							int tmp = (int)*ptr2;
 							*ptr1 = *ptr2;
 							*ptr2 = tmp;
 							break;
+						}
 						case LONG_TP:
+						{
 							long *ptr2 = (long *) params[idx2].address;
 							long tmp = *ptr2;
 							*ptr2 = *ptr1;
 							*ptr1 = tmp;
 							break;
+						}
 						default:
+						{
 							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							exit(0);
+						}
 					}					
 					break;
+				}
 				default:
+				{
 					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					exit(0);
+				}
 			}
 
 			break;
@@ -355,45 +438,58 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 
 			switch(params[idx].type){
 				case CHAR_TP:
+				{
 					char *ptr = (char *) params[idx].address;
 					*ptr = abs(*ptr);
-					break;
+					break;					
+				}
 				case SHORT_TP:
+				{
 					short *ptr = (short *) params[idx].address;
 					*ptr = abs(*ptr);
 					break;
+				}
 				case INT_TP:
+				{
 					int *ptr = (int *) params[idx].address;
 					*ptr = abs(*ptr);
 					break;
+				}
 				case LONG_TP:
+				{
 					long *ptr = (long *) params[idx].address;
 					*ptr = abs(*ptr);
 					break;
+				}
 				default:
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);		
+				{
+					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					exit(0);
+				}
 			}
 
 			break;
 		}
 		default:
+		{
 			fprintf(stderr, "M->TYPE ERR @__accmut__prepare_call. MID: %d MTP: %d\n", MUTATION_ID, m->type);
 			exit(0);
+		}
 
 	}
 
 	return 0;
 }
 
-int __accmut__std_i32(){
+int __accmut__stdcall_i32(){
     return ALLMUTS[MUTATION_ID]->op_2;
 }
 
-long __accmut__std_i64(){
+long __accmut__stdcall_i64(){
 	return ALLMUTS[MUTATION_ID]->op_2;
 }
 
-void __accmut__process_call_void(){/*do nothing*/}
+void __accmut__stdcall_void(){/*do nothing*/}
 
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){
@@ -573,30 +669,56 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 	return ori;
 }
 
-#if 0
-void __accmut__process_st_i32(int from, int to, int *addr){
 
-	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
-		int ori = ALLMUTS[to]->s_con;
-		*addr = ori;
-		return;
-	}
-	Mutation *m = ALLMUTS[MUTATION_ID];
-	if(m->type == LVR){
-		*addr = m->t_con;
-		return;
-	}else{
-		fprintf(stderr, "M->TYPE ERR @__accmut__process_st_i32. MID: %d MTP: %d\n", MUTATION_ID, m->type);
-		exit(0);
-	}
+int __accmut__prepare_st_i32(int from, int to, int* tobestore){
 	
+	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		return 0;
+	}
+
+	Mutation *m = ALLMUTS[MUTATION_ID];
+
+	if(m->type == STD){
+		return 1;
+	}
+
+	switch(m->type){
+		case LVR:
+		{
+			*tobestore = m->op_2;
+			break;
+		}
+		case UOI:
+		{
+			int uoi_tp = m->op_2;
+			if(uoi_tp == 0){
+				*tobestore = *tobestore + 1;
+			}else if(uoi_tp == 1){
+				*tobestore = *tobestore - 1;
+			}else if(uoi_tp == 2){
+				*tobestore = 0 - *tobestore;
+			}
+			break;
+		}
+		case ABV:
+		{
+			*tobestore = abs(*tobestore);
+			break;
+		}
+		default:
+			fprintf(stderr, "M->TYPE ERR @__accmut__prepare_st_i32. MID: %d MTP: %d\n", MUTATION_ID, m->type);
+			exit(0);		
+	}
+
+	return 0;
 }
 
-void __accmut__process_st_i64(int from, int to, long *addr){
-	long ori = ALLMUTS[to]->s_con;
-	*addr = ori;
+int __accmut__prepare_st_i64(int from, int to, long* addr){
+	return 0;
 }
-#endif
+
+void __accmut__std_store(){/*donothing*/}
+
 
 
 #endif
