@@ -54,7 +54,7 @@ bool MutationGen::runOnFunction(Function &F) {
 	if(F.getName().equals("main")){
 		return false;
 	}
-	errs()<<"==== GENEARTING MUTATION FOR : "<<F.getName()<<" ========\n";
+	errs()<<"==== GENEARTING MUTATION FOR : "<<F.getName()<<"() ========\n";
 	genMutationFile(F);
 	return false;
 }
