@@ -422,7 +422,7 @@ bool SMAInstrumenter::runOnFunction(Function & F){
 		return false;
 	}
 
-	errs()<<"\n######## SMA INSTRUMTNTING MUT  @"<<TheModule->getName()<<"->"<<F.getName()<<"  ########\n\n";	
+	errs()<<"\n######## SMA INSTRUMTNTING MUT  @"<<TheModule->getName()<<"->"<<F.getName()<<"()  ########\n\n";	
 
 	instrument(F, v);
 	//test(F);
@@ -527,8 +527,8 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		mut_from = tmp.front()->id;
 		mut_to = tmp.back()->id;
 
-		llvm::errs()<<"CURRENT INST :\t"<<*cur_it<<"\tFROM : "
-			<<mut_from<<"\tTO : "<<mut_to<<"\n";
+		llvm::errs()<<"CURRENT_INST (FROM: "
+			<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
 		
 		if(dyn_cast<CallInst>(&*cur_it)){
 			//move all constant literal int to repalce to alloca
@@ -615,6 +615,16 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			BranchInst::Create(label_if_then, label_if_else, hasstd, cur_bb);
 				
 			//label_if_then
+			//move the loadinsts of params into if_then_block
+			for (auto OI = oricall->op_begin(), OE = oricall->op_end() - 1; OI != OE; ++OI){
+				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){
+					ld->removeFromParent();
+					label_if_then->getInstList().push_back(ld);
+				}else{
+					llvm::errs()<<"NOT A LoadInst @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+					exit(0);
+				}
+			}
 			label_if_then->getInstList().push_back(oricall);
 			BranchInst::Create(label_if_end, label_if_then);	
 			
@@ -641,7 +651,6 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			//label_if_end
 			if(oricall->getType()->isVoidTy()){
 				cur_it->eraseFromParent();
-				
 				instrumented_insts += 6;
 			}
 			else{
@@ -649,7 +658,6 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				call_res->addIncoming(oricall, label_if_then);
 				call_res->addIncoming(stdcall, label_if_else);
 				ReplaceInstWithInst(cur_it, call_res);
-				
 				instrumented_insts += 7;
 			}
 
@@ -687,15 +695,18 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			ConstantInt* to_i32= ConstantInt::get(TheModule->getContext(),
 				APInt(32, StringRef(ss.str()), 10));
 			params.push_back(to_i32);
+
+			Value* tobestored = dyn_cast<Value>(st->op_begin());
+			params.push_back(tobestored);
 			
-			auto OI = st->op_begin() + 1;// the pointer of the storeinst
-			if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
+			auto addr = st->op_begin() + 1;// the pointer of the storeinst
+			if(LoadInst *ld = dyn_cast<LoadInst>(&*addr)){//is a local var
 				params.push_back(ld->getPointerOperand());
-			}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){
+			}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*addr)){
 				params.push_back(alloca);
 			}else{
 				llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
-				Value *v = dyn_cast<Value>(&*OI);
+				Value *v = dyn_cast<Value>(&*addr);
 				v->dump();
 				exit(0);
 			}
@@ -710,21 +721,15 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
 		
 			BasicBlock *cur_bb = cur_it->getParent();
-			
-			Instruction* orist = cur_it->clone();
-			
+						
 			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "if.end");
 			
-			BasicBlock* label_if_then = BasicBlock::Create(TheModule->getContext(), "if.then",cur_bb->getParent(), label_if_end);
-			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "if.else",cur_bb->getParent(), label_if_end);
+			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "std.st",cur_bb->getParent(), label_if_end);
 			
 			cur_bb->back().eraseFromParent();
 			
-			BranchInst::Create(label_if_then, label_if_else, hasstd, cur_bb);
+			BranchInst::Create(label_if_end, label_if_else, hasstd, cur_bb);
 
-			//label_if_then
-			label_if_then->getInstList().push_back(orist);
-			BranchInst::Create(label_if_end, label_if_then);	
 
 			//label_if_else
 			Function *std_handle = TheModule->getFunction("__accmut__std_store");
@@ -737,9 +742,8 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 
 			//label_if_end
 			cur_it->eraseFromParent();	
-			instrumented_insts += 6;
+			instrumented_insts += 4;
 		}
-		#if 0
 		else{
 			// FOR ARITH INST
 			if(cur_it->getOpcode() >= Instruction::Add && 
@@ -805,7 +809,6 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				ReplaceInstWithInst(cur_it, i32_conv);
 			}
 		}
-		#endif
 		
 	}
 }

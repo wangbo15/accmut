@@ -82,9 +82,9 @@ void __accmut__init(){
 		*(MUTS_ON + i) = 1;
 	}
     
- //   	for(i = 1; i < MAX_MUT_NUM + 1; i++){
-	// 	__accmut__mainfork(i);
-	// }
+   	for(i = 1; i < MAX_MUT_NUM + 1; i++){
+		__accmut__mainfork(i);
+	}
 	
 
 	/*if(MUTATION_ID == 0){
@@ -670,9 +670,10 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 }
 
 
-int __accmut__prepare_st_i32(int from, int to, int* tobestore){
+int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
 	
 	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		*addr = tobestore;
 		return 0;
 	}
 
@@ -685,24 +686,24 @@ int __accmut__prepare_st_i32(int from, int to, int* tobestore){
 	switch(m->type){
 		case LVR:
 		{
-			*tobestore = m->op_2;
+			tobestore = m->op_2;
 			break;
 		}
 		case UOI:
 		{
 			int uoi_tp = m->op_2;
 			if(uoi_tp == 0){
-				*tobestore = *tobestore + 1;
+				tobestore = tobestore + 1;
 			}else if(uoi_tp == 1){
-				*tobestore = *tobestore - 1;
+				tobestore = tobestore - 1;
 			}else if(uoi_tp == 2){
-				*tobestore = 0 - *tobestore;
+				tobestore = 0 - tobestore;
 			}
 			break;
 		}
 		case ABV:
 		{
-			*tobestore = abs(*tobestore);
+			tobestore = abs(tobestore);
 			break;
 		}
 		default:
@@ -710,10 +711,11 @@ int __accmut__prepare_st_i32(int from, int to, int* tobestore){
 			exit(0);		
 	}
 
+	*addr = tobestore;
 	return 0;
 }
 
-int __accmut__prepare_st_i64(int from, int to, long* addr){
+int __accmut__prepare_st_i64(int from, int to, int tobestore, long* addr){
 	return 0;
 }
 

@@ -201,7 +201,7 @@ void __accmut__load_all_muts(){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 
-		fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
+		// fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
 		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
 		if(!strcmp(type, "AOR")){
 			m->type = AOR;
