@@ -67,9 +67,11 @@ unsigned long long EXEC_INSTS = 0;
 
 #define MUTFILELINE 128
 
-#include <accmut/accmut_mut.h>
+#include "accmut_mut.h"
 
-#include <accmut/accmut_io.h>
+#include "accmut_io.h"
+
+#include "accmut_async_sig_safe_string.h"
 
 Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MAX_MUT_NUM;
@@ -88,23 +90,33 @@ void __accmut__exit_time(){
 
 	gettimeofday(&tv_end, NULL);
 
-	double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
+	//double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
 
-#if 0
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
-	fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);
-#endif
-	
+	//fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);	
 #if 1
+
+	int fd = open("timeres", O_WRONLY | O_CREAT | O_APPEND);
+	char res[128] = "ATEXIT ";
+
+	__accmut__strcat(res, __accmut__itoa(real_sec, 10));
+	__accmut__strcat(res, "\t");
+	__accmut__strcat(res, __accmut__itoa(real_usec, 10));
+	__accmut__strcat(res, "\n");
+
+	write(fd, res, __accmut__strlen(res));
+	close(fd);
+
+#else
 	FILE* timefile = fopen("timeres", "a");
 	if(timefile == 0){
 		fprintf(stderr, "FILE OPEN ERROR @__accmut__exit_time\n");
 	}
 	fprintf(timefile, "ATEXIT %d\t%lf\n", TEST_ID, interval);	
 	fclose(timefile);
-#else
+
 	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 	fprintf(stderr, "ATEXIT %d\t%lf\n", TEST_ID, interval);
 #endif
