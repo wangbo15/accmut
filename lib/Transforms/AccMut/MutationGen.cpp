@@ -54,7 +54,7 @@ bool MutationGen::runOnFunction(Function &F) {
 	if(F.getName().equals("main")){
 		return false;
 	}
-	errs()<<"==== GENEARTING MUTATION FOR : "<<F.getName()<<"() ========\n";
+	errs()<<"\n\t GENEARTING MUTATION FOR : "<<TheModule->getName()<<" -> "<<F.getName()<<"() \n";
 	genMutationFile(F);
 	return false;
 }
@@ -106,6 +106,10 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::And:
 				case Instruction::Or:
 				case Instruction::Xor:{
+					// TODO: to support i32 and i64 first
+					if(! (BI->getType()->isIntegerTy(32) || BI->getType()->isIntegerTy(64))){
+						continue;
+					}
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
@@ -114,12 +118,18 @@ void MutationGen::genMutationFile(Function & F){
 					break;
 				}
 				case Instruction::Call:
+				{
+					StringRef name = cast<CallInst>(BI)->getCalledFunction()->getName();
+					if(name.startswith("llvm")){//omit llvm inside functions
+						continue;
+					}
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);					
 					genSTDCall(BI, F.getName(), index);
 					break;
+				}
 				case Instruction::Store:{
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);

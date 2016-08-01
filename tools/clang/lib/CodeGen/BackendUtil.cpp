@@ -689,7 +689,7 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
   // Run passes. For now we do all passes at once, but eventually we
   // would like to have the option of streaming code generation.
 
-	llvm::errs()<<">>>>> ENTERING MUDOLE : "<<TheModule->getName()<<" >>>>>\n";
+	llvm::errs()<<"\n>>>>> ENTERING MUDOLE : "<<TheModule->getName()<<" \t>>>>>\n";
 	
   if (PerFunctionPasses) {
 

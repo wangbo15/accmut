@@ -17,6 +17,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
+
 #include<fstream>
 #include<sstream>
 #include<string>
@@ -462,8 +463,9 @@ int getTypeMacro(Type *t){
 				res = LONG_TP;
 				break;
 			default:
-				llvm::errs()<<"TYPE ERROR @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
-				exit(0);
+				llvm::errs()<<"OMMITNG PARAM TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<" : ";
+				llvm::errs()<<*t<<'\n';
+				//exit(0);
 		}
 	}
 	
@@ -514,10 +516,6 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				break;
 			}
 		}
-
-/*		for(auto I = tmp.begin(); I != tmp.end(); I++){
-			(*I)->dump();
-		}*/
 		
 		cur_it =  getLocation(F, instrumented_insts, tmp[0]->index);
 		
@@ -527,7 +525,7 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		mut_from = tmp.front()->id;
 		mut_to = tmp.back()->id;
 
-		llvm::errs()<<"CURRENT_INST (FROM: "
+		llvm::errs()<<"CUR_INST: "<<tmp.front()->index<<"\t(FROM: "
 			<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
 		
 		if(dyn_cast<CallInst>(&*cur_it)){
@@ -574,6 +572,8 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 					APInt(16, StringRef(ss.str()), 10)); 
 				params.push_back(ctai);
 				//now push the pointer of idx'th param
+
+				// TODO:: for array ! 
 				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
 					params.push_back(ld->getPointerOperand());
 				}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){// a param of the F, fetch it by alloca
@@ -704,8 +704,11 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				params.push_back(ld->getPointerOperand());
 			}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*addr)){
 				params.push_back(alloca);
+			}else if(Constant *con = dyn_cast<Constant>(&*addr)){
+				params.push_back(con);
 			}else{
 				llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				cur_it->dump();
 				Value *v = dyn_cast<Value>(&*addr);
 				v->dump();
 				exit(0);
@@ -755,7 +758,10 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				}else if(ori_ty->isIntegerTy(64)){
 					f_process = TheModule->getFunction("__accmut__process_i64_arith");
 				}else{
-					llvm::errs()<<"TYPE ERROR @ instrument() ArithInst\n";
+					llvm::errs()<<"ArithInst TYPE ERROR @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+					cur_it->dump();
+					llvm::errs()<<*ori_ty<<"\n";
+					// TODO:: handle i1, i8, i64 ... type
 					exit(0);
 				}
 
