@@ -30,7 +30,7 @@ void __accmut__mainfork(int id){
 		pid_t pid = fork();
 		
 		if(pid < 0){
-			fprintf(stderr, "FORK ERR!\n");
+			ERRMSG("fork ERR ");
 			exit(0);
 		}else if(pid == 0){//child process
 			MUTATION_ID = id;
@@ -41,7 +41,7 @@ void __accmut__mainfork(int id){
 			int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
 			
 			if(r < 0){
-				fprintf(stderr, "SET TIMMER ERR, M_ID : %d\n", id);
+				ERRMSG("setitimer ERR ");
 				exit(0);
 			}
 		}else{//father process	
@@ -49,7 +49,8 @@ void __accmut__mainfork(int id){
 			int pr = waitpid(pid, NULL, 0);
 
 			if(pr < 0){
-				fprintf(stderr, "WAITPID ERROR !!!!!!\n");
+				ERRMSG("waitpid ERR ");
+				exit(0);
 			}			
 		}
 	}
@@ -68,7 +69,7 @@ void __accmut__init(){
     signal(SIGPROF, __accmut__handler);
     
 	if(TEST_ID < 0){
-		fprintf(stderr, "TEST_ID NOT INIT\n");
+		ERRMSG("TEST_ID NOT INIT");
 		exit(0);
 	}
 
@@ -92,17 +93,10 @@ void __accmut__init(){
 	}*/
 }
 
-//TYPE BITS OF SIGNATURE
-#define CHAR_TP 0
-#define SHORT_TP 1
-#define INT_TP 2
-#define LONG_TP 3
-
-typedef struct PrepareCallParam{
-	int type;
-	unsigned long address;
-}PrepareCallParam;
-
+/*
+*must fellow the type seq: (i8 type, i8 index, i64* ptr ...)
+*not std ->return 0 , std -> return 1
+*/
 int __accmut__prepare_call(int from, int to, int opnum, ...){
 
 	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
@@ -118,7 +112,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 	va_list ap;
 	va_start(ap, opnum);
 
-	PrepareCallParam params[16];	//max param num limited to 16
+	PrepareCallParam params[MAX_PARAM_NUM];	//max param num limited to 16
 
 	int i;
 	for(i = 0; i < opnum; i++){
@@ -130,7 +124,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 
 		//fprintf(stderr, "%dth: %d\n", i, *((int*)ptrs[i]));
 
-	}
+	}//end for i
 	va_end(ap);
 
 	switch(m->type){
@@ -165,11 +159,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				}
 				default:
 				{
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					ERRMSG("ERR LVR params[idx].type ");
 					exit(0);
 				}
-			}
-
+			}//end switch(params[idx].type)
 			break;
 		}
 		case UOI:
@@ -228,11 +221,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				}
 				default:
 				{
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					ERRMSG("ERR UOI params[idx].type ");
 					exit(0);
 				}
-			}
-
+			}//end switch(params[idx].type)
 			break;
 		}
 		case ROV:
@@ -280,11 +272,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						}
 						default:
 						{
-							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							ERRMSG("ERR ROV params[idx2].type ");
 							exit(0);
 						}
-					}
-
+					}//end switch(params[idx2].type)
 					break;
 				}
 				case SHORT_TP:
@@ -326,11 +317,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						}
 						default:
 						{
-							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							ERRMSG("ERR ROV params[idx2].type ");
 							exit(0);
 						}
-					}
-
+					}//end switch(params[idx2].type)
 					break;
 				}
 				case INT_TP:
@@ -372,10 +362,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						}
 						default:
 						{
-							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							ERRMSG("ERR ROV params[idx2].type ");
+							exit(0);
 						}
-					}
-
+					}//end switch(params[idx2].type)
 					break;
 				}
 				case LONG_TP:
@@ -417,19 +407,18 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						}
 						default:
 						{
-							fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+							ERRMSG("ERR ROV params[idx2].type ");
 							exit(0);
 						}
-					}					
+					}//end switch(params[idx2].type)				
 					break;
 				}
 				default:
 				{
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					ERRMSG("ERR ROV params[idx1].type ");
 					exit(0);
 				}
-			}
-
+			}//end switch(params[idx1].type)
 			break;
 		}
 		case ABV:
@@ -463,23 +452,20 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				}
 				default:
 				{
-					fprintf(stderr, "ERR @__accmut__prepare_call. MID: %d\n", MUTATION_ID);
+					ERRMSG("ERR ABV params[idx].type ");
 					exit(0);
 				}
-			}
-
+			}//end switch(params[idx].type)
 			break;
 		}
 		default:
 		{
-			fprintf(stderr, "M->TYPE ERR @__accmut__prepare_call. MID: %d MTP: %d\n", MUTATION_ID, m->type);
+			ERRMSG("m->type ERR ");
 			exit(0);
 		}
-
-	}
-
+	}//end switch(m->type)
 	return 0;
-}
+}//end __accmut__prepare_call
 
 int __accmut__stdcall_i32(){
     return ALLMUTS[MUTATION_ID]->op_2;
@@ -525,7 +511,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 				}else if(m->op_2 == 2){
 					u_left = 0 - left;
 				}else{
-					fprintf(stderr, "UOI ERR @__accmut__process_i32_arith. MID: %d\n", MUTATION_ID);
+					ERRMSG("UOI ERR ");
 					exit(0);
 				}
 				mut_res = __accmut__cal_i32_arith(m->sop, u_left, right);
@@ -538,7 +524,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 				}else if(m->op_2 == 2){
 					u_right = 0 - right;
 				}else{
-					fprintf(stderr, "UOI ERR @__accmut__process_i32_arith. MID: %d\n", MUTATION_ID);
+					ERRMSG("UOI ERR ");
 					exit(0);
 				}
 				mut_res = __accmut__cal_i32_arith(m->sop, left, u_right);
@@ -568,18 +554,95 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 		default:
 		{
-			fprintf(stderr, "M->TYPE ERR @__accmut__process_i32_arith. MID: %d MTP: %d\n", MUTATION_ID, m->type);
+			ERRMSG("m->type ERR ");
 			exit(0);
 		}
-	}
-	
+	}//end switch
 	return mut_res;
-}
+}//end __accmut__process_i32_arith
 
 long __accmut__process_i64_arith(int from, int to, long left, long right){
+
 	long ori = __accmut__cal_i64_arith(ALLMUTS[to]->sop , left, right);
-	return ori;
-}
+	
+	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		return ori;
+	}
+	
+	Mutation *m = ALLMUTS[MUTATION_ID];
+	
+	long mut_res;
+
+	switch(m->type){
+		case LVR:
+		{
+			if(m->op_0 == 0){
+				mut_res = __accmut__cal_i64_arith(m->sop, m->op_2, right);
+			}else{
+				mut_res = __accmut__cal_i64_arith(m->sop, left, m->op_2);
+			}
+			break;
+		}
+		case UOI:
+		{
+			if(m->op_1 == 0){
+				long u_left;
+				if(m->op_2 == 0){
+					u_left = left + 1;
+				}else if(m->op_2 == 1){
+					u_left = left - 1;
+				}else if(m->op_2 == 2){
+					u_left = 0 - left;
+				}else{
+					ERRMSG("UOI ERR ");
+					exit(0);
+				}
+				mut_res = __accmut__cal_i64_arith(m->sop, u_left, right);
+			}else{
+				long u_right;
+				if(m->op_2 == 0){
+					u_right = right + 1;
+				}else if(m->op_2 == 1){
+					u_right = right - 1;
+				}else if(m->op_2 == 2){
+					u_right = 0 - right;
+				}else{
+					ERRMSG("UOI ERR ");
+					exit(0);
+				}
+				mut_res = __accmut__cal_i64_arith(m->sop, left, u_right);
+			}
+			break;
+		}
+		case ROV:
+		{
+			mut_res = __accmut__cal_i64_arith(m->sop , right, left);
+			break;
+		}
+		case ABV:
+		{
+			if(m->op_0 == 0){
+				mut_res = __accmut__cal_i64_arith(m->sop, abs(left), right);
+			}else{
+				mut_res = __accmut__cal_i64_arith(m->sop, left, abs(right) );
+			}
+			break;
+		}		
+		case AOR:
+		case LOR:
+		{
+			mut_res = __accmut__cal_i64_arith(m->op_0, left, right);
+			break;
+		}
+
+		default:
+		{
+			ERRMSG("m->type ERR ");
+			exit(0);
+		}
+	}//end switch
+	return mut_res;
+}//end __accmut__process_i64_arith
 
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 
@@ -594,7 +657,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	
 	int mut_res;
 
-	switch(m->type){		
+	switch(m->type){	
 		case LVR:
 		{
 			if(m->op_0 == 0){
@@ -615,7 +678,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 				}else if(m->op_2 == 2){
 					u_left = 0 - left;
 				}else{
-					fprintf(stderr, "UOI ERR @__accmut__process_i32_cmp. MID: %d\n", MUTATION_ID);
+					ERRMSG("UOI ERR ");
 					exit(0);
 				}
 				mut_res = __accmut__cal_i32_bool(s_pre, u_left, right);
@@ -628,7 +691,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 				}else if(m->op_2 == 2){
 					u_right = 0 - right;
 				}else{
-					fprintf(stderr, "UOI ERR @__accmut__process_i32_cmp. MID: %d\n", MUTATION_ID);
+					ERRMSG("UOI ERR ");
 					exit(0);
 				}
 				mut_res = __accmut__cal_i32_bool(s_pre, left, u_right);
@@ -655,19 +718,93 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 			break;
 		}
 		default:
-			fprintf(stderr, "M->TYPE ERR @__accmut__cal_i32_bool. MID: %d MTP: %d\n", MUTATION_ID, m->type);
+			ERRMSG("m->type ERR ");
 			exit(0);
-	}
+	}//end switch
 	
-	return mut_res;    
-}
+	return mut_res;
+}//end __accmut__process_i32_cmp
 
 int __accmut__process_i64_cmp(int from, int to, long left, long right){
-
+	
 	int s_pre = ALLMUTS[to]->op_1;
-	int ori = __accmut__cal_i64_bool(s_pre, left, right);
-	return ori;
-}
+
+	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		int ori = __accmut__cal_i64_bool(s_pre , left, right);	
+		return ori;
+	}
+	
+	Mutation *m = ALLMUTS[MUTATION_ID];
+	
+	int mut_res;
+
+	switch(m->type){	
+		case LVR:
+		{
+			if(m->op_0 == 0){
+				mut_res = __accmut__cal_i64_bool(s_pre, m->op_2, right);
+			}else{
+				mut_res = __accmut__cal_i64_bool(s_pre, left, m->op_2);
+			}
+			break;
+		}
+		case UOI:
+		{
+			if(m->op_1 == 0){
+				long u_left;
+				if(m->op_2 == 0){
+					u_left = left + 1;
+				}else if(m->op_2 == 1){
+					u_left = left - 1;
+				}else if(m->op_2 == 2){
+					u_left = 0 - left;
+				}else{
+					ERRMSG("UOI ERR ");
+					exit(0);
+				}
+				mut_res = __accmut__cal_i32_bool(s_pre, u_left, right);
+			}else{
+				long u_right;
+				if(m->op_2 == 0){
+					u_right = right + 1;
+				}else if(m->op_2 == 1){
+					u_right = right - 1;
+				}else if(m->op_2 == 2){
+					u_right = 0 - right;
+				}else{
+					ERRMSG("UOI ERR ");
+					exit(0);
+				}
+				mut_res = __accmut__cal_i64_bool(s_pre, left, u_right);
+			}			
+			break;
+		}
+		case ROV:
+		{
+			mut_res = __accmut__cal_i64_bool(s_pre , right, left);
+			break;
+		}
+		case ABV:
+		{
+			if(m->op_0 == 0){
+				mut_res = __accmut__cal_i64_bool(s_pre, abs(left), right);
+			}else{
+				mut_res = __accmut__cal_i64_bool(s_pre, left, abs(right) );
+			}
+			break;
+		}
+		case ROR:
+		{
+			mut_res = __accmut__cal_i64_bool(m->op_2, left, right);
+			break;
+		}
+		default:
+			ERRMSG("m->type ERR ");
+			exit(0);
+	}//end switch
+
+	return mut_res;
+}//end __accmut__process_i64_cmp
 
 
 int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
@@ -707,20 +844,57 @@ int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
 			break;
 		}
 		default:
-			fprintf(stderr, "M->TYPE ERR @__accmut__prepare_st_i32. MID: %d MTP: %d\n", MUTATION_ID, m->type);
+			ERRMSG("m->type ERR ");
 			exit(0);		
-	}
-
+	}//end switch(m->type)
 	*addr = tobestore;
 	return 0;
 }
 
-int __accmut__prepare_st_i64(int from, int to, int tobestore, long* addr){
-	return 0;
-}
+int __accmut__prepare_st_i64(int from, int to, long tobestore, long* addr){
+	
+	if(MUTATION_ID == 0 || MUTATION_ID < from || MUTATION_ID > to){
+		*addr = tobestore;
+		return 0;
+	}
+
+	Mutation *m = ALLMUTS[MUTATION_ID];
+
+	if(m->type == STD){
+		return 1;
+	}
+
+	switch(m->type){
+		case LVR:
+		{
+			tobestore = m->op_2;
+			break;
+		}
+		case UOI:
+		{
+			int uoi_tp = m->op_2;
+			if(uoi_tp == 0){
+				tobestore = tobestore + 1;
+			}else if(uoi_tp == 1){
+				tobestore = tobestore - 1;
+			}else if(uoi_tp == 2){
+				tobestore = 0 - tobestore;
+			}
+			break;
+		}
+		case ABV:
+		{
+			tobestore = abs(tobestore);
+			break;
+		}
+		default:
+			ERRMSG("m->type ERR ");
+			exit(0);		
+	}//end switch(m->type)
+	*addr = tobestore;
+	return 0;}
 
 void __accmut__std_store(){/*donothing*/}
-
 
 
 #endif

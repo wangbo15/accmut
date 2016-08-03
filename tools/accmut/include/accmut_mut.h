@@ -1,14 +1,14 @@
 typedef enum MTYPE{
-	AOR,
-	LOR,
-	COR,
-	ROR,
-	SOR,
-	STD,
-	LVR,
-	UOI,
-	ROV,
-	ABV
+	AOR, /* 0 */
+	LOR, /* 1 */
+	COR, /* 2 */
+	ROR, /* 3 */
+	SOR, /* 4 */
+	STD, /* 5 */
+	LVR, /* 6 */
+	UOI, /* 7 */
+	ROV, /* 8 */
+	ABV  /* 9 */
 }MType;
 
 typedef struct Mutation{

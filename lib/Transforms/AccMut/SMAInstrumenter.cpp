@@ -518,13 +518,20 @@ void SMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		}
 		
 		cur_it =  getLocation(F, instrumented_insts, tmp[0]->index);
-		
+
 		cur_bb = cur_it->getParent();
 
 		int mut_from, mut_to;
 		mut_from = tmp.front()->id;
 		mut_to = tmp.back()->id;
 
+		if(tmp.size() >= MAX_MUT_NUM_PER_LOCATION){
+			llvm::errs()<<"TOO MANY MUTS@ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+			llvm::errs()<<"CUR_INST: "<<tmp.front()->index<<"\t(FROM: "
+				<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
+			exit(0);
+		}
+		
 		llvm::errs()<<"CUR_INST: "<<tmp.front()->index<<"\t(FROM: "
 			<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
 		

@@ -20,15 +20,14 @@
 
 
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 1
-
+#define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 
 //for DMA FORK
@@ -77,7 +76,24 @@ Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MAX_MUT_NUM;
 int *MUTS_ON;
 
+#define MAX_PARAM_NUM 16 
 
+/****************** PREPARE CALL **************************/
+//TYPE BITS OF SIGNATURE
+#define CHAR_TP 0
+#define SHORT_TP 1
+#define INT_TP 2
+#define LONG_TP 3
+
+typedef struct PrepareCallParam{
+	int type;
+	unsigned long address;
+}PrepareCallParam;
+/**********************************************************/
+
+
+#define ERRMSG(msg) fprintf(stderr, "%s @ %s->%s():%d\tMID:%d\n", \
+	msg,__FILE__, __FUNCTION__, __LINE__, MUTATION_ID)
 
 /************* ALL EXIT HANDLER ***************************/
 void __accmut__exit_check_output();
@@ -95,11 +111,8 @@ void __accmut__exit_time(){
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
-	//fprintf(stderr, "%ld\t%ld\n", real_sec, real_usec);	
-#if 1
-
 	int fd = open("timeres", O_WRONLY | O_CREAT | O_APPEND);
-	char res[128] = "ATEXIT ";
+	char res[128] = "ATEXIT\t";
 
 	__accmut__strcat(res, __accmut__itoa(real_sec, 10));
 	__accmut__strcat(res, "\t");
@@ -108,47 +121,8 @@ void __accmut__exit_time(){
 
 	write(fd, res, __accmut__strlen(res));
 	close(fd);
-
-#else
-	FILE* timefile = fopen("timeres", "a");
-	if(timefile == 0){
-		fprintf(stderr, "FILE OPEN ERROR @__accmut__exit_time\n");
-	}
-	fprintf(timefile, "ATEXIT %d\t%lf\n", TEST_ID, interval);	
-	fclose(timefile);
-
-	// fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
-	fprintf(stderr, "ATEXIT %d\t%lf\n", TEST_ID, interval);
-#endif
-
 }
 
-void __accmut__exit_preciese_time(){
-	gettimeofday(&tv_end, NULL);
-	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
-	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
-
-	if(MUTATION_ID == 0){
-		
-		getrusage(RUSAGE_SELF, &usage_fend);
-
-		fprintf(stderr, "%d\t%ld %ld\t%ld %ld\t%ld %ld\n", MUTATION_ID, real_sec, real_usec,
-			usage_fend.ru_utime.tv_sec,  usage_fend.ru_utime.tv_usec, 
-			usage_fend.ru_stime.tv_sec, usage_fend.ru_stime.tv_sec);
-	}else{
-
-		getrusage(RUSAGE_SELF, &usage_cend);
-
-		long child_u_sec = usage_cend.ru_utime.tv_sec - usage_cbegin.ru_utime.tv_sec;
-		long child_u_usec = usage_cend.ru_utime.tv_usec - usage_cbegin.ru_utime.tv_usec;
-		long child_s_sec = usage_cend.ru_stime.tv_sec - usage_cbegin.ru_stime.tv_sec;
-		long child_s_usec = usage_cend.ru_stime.tv_usec - usage_cbegin.ru_stime.tv_usec;
-
-		fprintf(stderr, "%d\t%ld %ld\t%ld %ld\t%ld %ld\n", MUTATION_ID, real_sec, real_usec, 
-			child_u_sec, child_u_usec, child_s_sec, child_s_usec);
-	}
-
-}
 
 /* The signal handler of time out process */
 void __accmut__handler(int sig){
@@ -213,8 +187,10 @@ void __accmut__load_all_muts(){
 		//fprintf(stderr, "%s", buff);
 		sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 
-		// fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
+		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
+
 		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
+
 		if(!strcmp(type, "AOR")){
 			m->type = AOR;
 			int s_op, t_op;
@@ -285,13 +261,13 @@ void __accmut__load_all_muts(){
 	}
 	MAX_MUT_NUM = id - 1;
 
-	#if 0
+	#if 1
 	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MAX_MUT_NUM);
 	int i;
 	for(i = 1; i <= MAX_MUT_NUM; i++){
 		Mutation *m = ALLMUTS[i];
 		fprintf(stderr, "%d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
-			 i, m->type, m->op_0, m->op_1, m->op_2);
+			 i, m->type, m->sop, m->op_0, m->op_1, m->op_2);
 	}
 	#endif
 }
