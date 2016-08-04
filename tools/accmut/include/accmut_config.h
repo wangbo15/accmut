@@ -112,7 +112,11 @@ void __accmut__exit_time(){
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
 	int fd = open("timeres", O_WRONLY | O_CREAT | O_APPEND);
-	char res[128] = "ATEXIT\t";
+	//char res[128] = "ATEXIT\t";
+
+	char res[128];
+	__accmut__strcat(res, __accmut__itoa(TEST_ID, 10));
+	__accmut__strcat(res, "\t");
 
 	__accmut__strcat(res, __accmut__itoa(real_sec, 10));
 	__accmut__strcat(res, "\t");
@@ -133,9 +137,8 @@ void __accmut__handler(int sig){
 }
 
 void __accmut__sepcific_timer(){
-	char path[100];
-	strcpy(path, getenv("HOME"));
-	strcat(path, "/tmp/accmut/oritime.txt");
+	char path[128];
+	sprintf(path, "%s%s%d", getenv("HOME"), "/tmp/accmut/oritime/", TEST_ID);
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
 		fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
@@ -144,14 +147,11 @@ void __accmut__sepcific_timer(){
 		VALUE_USEC = 5000;
 		return;
 	}
-	//TODO::optimize
-	int i;
-	for(i = 1; i <= TEST_ID; i++){
-		fscanf(fp, "%d", &VALUE_SEC);
-		fscanf(fp, "%d", &VALUE_USEC);
-	}
+	fscanf(fp, "%d", &VALUE_SEC);
+	fscanf(fp, "%d", &VALUE_USEC);
 	fclose(fp);
 	// fprintf(stderr, " ~~~~~ %ld %ld\n", VALUE_SEC, VALUE_USEC);
+	// exit(0);
 }
 
 
