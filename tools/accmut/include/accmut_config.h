@@ -92,8 +92,8 @@ typedef struct PrepareCallParam{
 /**********************************************************/
 
 
-#define ERRMSG(msg) fprintf(stderr, "%s @ %s->%s():%d\tMID:%d\n", \
-	msg,__FILE__, __FUNCTION__, __LINE__, MUTATION_ID)
+#define ERRMSG(msg) fprintf(stderr, "%s @ %s->%s():%d\tMID: %d\tTID: %d\n", \
+	msg,__FILE__, __FUNCTION__, __LINE__, MUTATION_ID, TEST_ID)
 
 /************* ALL EXIT HANDLER ***************************/
 void __accmut__exit_check_output();

@@ -1,9 +1,9 @@
-#ifndef ACCMUT_UNDEF_H
-#define ACCMUT_UNDEF_H
+//#ifndef ACCMUT_UNDEF_H
+//#define ACCMUT_UNDEF_H
 
 /* USING IN THE MAIN FUNCTION, TO SWITCH FROM ACCMUT_IO TO STDIO */
 
-#ifdef USE_ACCMUT_IO //TODO:: use the same MACRO with accmut_redefine.d ? 
+//#ifdef USE_ACCMUT_IO //TODO:: use the same MACRO with accmut_redefine.d ? 
 
 	#undef FILE
 	#undef stdout
@@ -28,6 +28,6 @@
 	#undef fprintf
 	#undef printf
 	
-#endif
+//#endif
 
-#endif
+//#endif

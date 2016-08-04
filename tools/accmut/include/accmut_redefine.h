@@ -1,7 +1,7 @@
-#ifndef ACCMUT_REDEFINE_H
-#define ACCMUT_REDEFINE_H
+//#ifndef ACCMUT_REDEFINE_H
+//#define ACCMUT_REDEFINE_H
 
-#ifdef USE_ACCMUT_IO
+//#ifdef USE_ACCMUT_IO
 
     /****** FILE DATA STRUCTURE ******/
     #define FILE ACCMUT_FILE
@@ -33,6 +33,6 @@
 	#define fprintf(...) __accmut__fprintf(__VA_ARGS__)
 	#define printf(...) __accmut__printf(__VA_ARGS__)
 
-#endif  //USE_ACCMUT_IO
+//#endif  //USE_ACCMUT_IO
 
-#endif  //ACCMUT_REDEFINE_H
+//#endif  //ACCMUT_REDEFINE_H
