@@ -262,13 +262,16 @@ void __accmut__load_all_muts(){
 	MAX_MUT_NUM = id - 1;
 
 	#if 1
+	fprintf(stderr, "\n----------------- DUMP ALL MUTS ------------------\n");
 	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MAX_MUT_NUM);
 	int i;
 	for(i = 1; i <= MAX_MUT_NUM; i++){
 		Mutation *m = ALLMUTS[i];
-		fprintf(stderr, "%d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
+		fprintf(stderr, "MUT %d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
 			 i, m->type, m->sop, m->op_0, m->op_1, m->op_2);
 	}
+	fprintf(stderr, "----------------- END DUMP ALL MUTS ---------------\n");
+
 	#endif
 }
 

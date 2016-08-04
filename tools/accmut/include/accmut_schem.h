@@ -892,7 +892,8 @@ int __accmut__prepare_st_i64(int from, int to, long tobestore, long* addr){
 			exit(0);		
 	}//end switch(m->type)
 	*addr = tobestore;
-	return 0;}
+	return 0;
+}
 
 void __accmut__std_store(){/*donothing*/}
 

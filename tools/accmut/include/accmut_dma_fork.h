@@ -622,7 +622,7 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 
 }// end __accmut__process_i64_cmp
 
-
+/**************************** CALL ***************************************/
 int __accmut__apply_call_mut(Mutation* m, PrepareCallParam* params){
 
     if(m->type == STD){
@@ -997,6 +997,10 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
     }//end for i
     va_end(ap);
 
+    // for(i = 0; i < recent_num; i++){
+    //     printf("recent_num : %d -> %d @ %d\n", i, recent_set[i], getpid());
+    // }
+
     for(i = 0; i < recent_num; i++){
 
         if(recent_set[i] == 0) {
@@ -1320,28 +1324,34 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
         if(MUTATION_ID < from || MUTATION_ID > to){
             return 0;
         }
-        int tmpmid = temp_result[i];    //TODO :: CHECK !
-        if( tmpmid != 0 && ALLMUTS[tmpmid]->type != STD){
-            return 0;
-        }else{
+        
+        int tmpmid = temp_result[0];    //TODO :: CHECK !
+
+        // printf("MID %d tmpmid %d\n", MUTATION_ID, tmpmid);
+
+        Mutation *m = ALLMUTS[tmpmid];
+
+        if( tmpmid != 0 && m->type == STD){
             return 1;
+        }else{
+            return __accmut__apply_call_mut(m, &params);
         }
     }
 
    /* divide */
     __accmut__divide__eqclass();
 
-    for (int i = 0; i < eq_num; ++i)
-    {
-        printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);
-    }
+    // for (int i = 0; i < eq_num; ++i)
+    // {
+    //     printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);
+    // }
 
     /* fork */
     __accmut__fork__eqclass(from, to);
 
     /* apply the represent mutant*/
 
-    printf("CURR_MID: %d\n", MUTATION_ID);
+    // printf("CURR_MID: %d\n", MUTATION_ID);
 
 
     if(MUTATION_ID == 0)
@@ -1360,5 +1370,246 @@ long __accmut__stdcall_i64(){
 }
 
 void __accmut__stdcall_void(){/*do nothing*/}
+
+
+/******************************** STORE ***********************************/
+void __accmut__std_store(){/*donothing*/}
+
+int __accmut__apply_store_mut(Mutation*m , long tobestore, unsigned long addr, int is_i32){
+
+    if(m->type == STD){
+        return 1;
+    }
+
+    switch(m->type){
+        case LVR:
+        {
+            tobestore = m->op_2;
+            break;
+        }
+        case UOI:
+        {
+            int uoi_tp = m->op_2;
+            if(uoi_tp == 0){
+                tobestore = tobestore + 1;
+            }else if(uoi_tp == 1){
+                tobestore = tobestore - 1;
+            }else if(uoi_tp == 2){
+                tobestore = 0 - tobestore;
+            }
+            break;
+        }
+        case ABV:
+        {
+            tobestore = abs(tobestore);
+            break;
+        }
+        default:
+            ERRMSG("m->type ERR ");
+            exit(0);        
+    }//end switch(m->type)
+
+    if(is_i32 == 1){
+        int* ptr = (int*) addr;
+        *ptr = tobestore;
+    }else{
+        long* ptr = (long*) addr;
+        *ptr = tobestore;
+    }
+    return 0;
+}
+
+int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
+
+    __accmut__filter__variant(from, to);
+
+    Mutation *m;
+
+    int i;
+
+    // for(i = 0; i < recent_num; ++i){
+    //     printf("recent_set[%d]: %d, PID: %d\n", i, recent_set[i], getpid());
+    // }
+
+    for(i = 0; i < recent_num; ++i) {
+
+        if(recent_set[i] == 0) {
+            temp_result[i] = 0;
+            continue;
+        }
+
+        m = ALLMUTS[recent_set[i]];
+
+        int mut_res = recent_set[i];
+
+        switch(m->type){
+            case UOI:
+            {
+                int uoi_tp = m->op_2;
+                if(tobestore == 0 && uoi_tp == 2){
+                    mut_res = 0;
+                }
+                break;
+            }//end case UOI
+            case ABV:
+            {
+                if(tobestore >= 0){//TODO::check signed or unsigned are the same
+                    mut_res = 0;
+                }
+                break;
+            }//end case ABV
+        }//end switch(m->type)
+
+        temp_result[i] = mut_res;
+        // printf("temp_result[%d] = %d\n", i, temp_result[i]);
+
+    } // end for i
+
+    if(recent_num == 1) {
+
+        if(MUTATION_ID < from || MUTATION_ID > to){
+            *addr = tobestore;
+            return 0;
+        }
+        
+        int tmpmid = temp_result[0];
+
+        m = ALLMUTS[tmpmid];
+
+        if( tmpmid != 0 && m->type == STD){
+            return 1;
+        }else{
+            return __accmut__apply_store_mut(m, tobestore, addr, 1);
+        }
+    }
+
+
+   /* divide */
+    __accmut__divide__eqclass();
+
+    // for (int i = 0; i < eq_num; ++i)
+    // {
+    //     printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);
+    // }
+
+
+    /* fork */
+    __accmut__fork__eqclass(from, to);
+
+    if(MUTATION_ID == 0){
+        *addr = tobestore;
+        return 0;
+    }
+
+
+    // printf("CURR_MID: %d   PID: %d\n", MUTATION_ID, getpid());
+
+
+    /* apply the mutation */
+    m = ALLMUTS[MUTATION_ID];
+
+    if(m->type == STD){
+        return 1;
+    }
+
+    return __accmut__apply_store_mut(m, tobestore, addr, 1);
+}
+
+
+int __accmut__prepare_st_i64(int from, int to, long tobestore, long *addr){
+    
+    __accmut__filter__variant(from, to);
+
+    Mutation *m;
+
+    int i;
+
+    // for(i = 0; i < recent_num; ++i){
+    //     printf("recent_set[%d]: %d, PID: %d\n", i, recent_set[i], getpid());
+    // }
+
+    for(i = 0; i < recent_num; ++i) {
+
+        if(recent_set[i] == 0) {
+            temp_result[i] = 0;
+            continue;
+        }
+
+        m = ALLMUTS[recent_set[i]];
+
+        int mut_res = recent_set[i];
+
+        switch(m->type){
+            case UOI:
+            {
+                int uoi_tp = m->op_2;
+                if(tobestore == 0 && uoi_tp == 2){
+                    mut_res = 0;
+                }
+                break;
+            }//end case UOI
+            case ABV:
+            {
+                if(tobestore >= 0){//TODO::check signed or unsigned are the same
+                    mut_res = 0;
+                }
+                break;
+            }//end case ABV
+        }//end switch(m->type)
+
+        temp_result[i] = mut_res;
+        // printf("temp_result[%d] = %d\n", i, temp_result[i]);
+
+    } // end for i
+
+    if(recent_num == 1) {
+
+        if(MUTATION_ID < from || MUTATION_ID > to){
+            *addr = tobestore;
+            return 0;
+        }
+        
+        int tmpmid = temp_result[0];
+
+        m = ALLMUTS[tmpmid];
+
+        if( tmpmid != 0 && m->type == STD){
+            return 1;
+        }else{
+            return __accmut__apply_store_mut(m, tobestore, addr, 0);
+        }
+    }
+
+
+   /* divide */
+    __accmut__divide__eqclass();
+
+    // for (int i = 0; i < eq_num; ++i)
+    // {
+    //     printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);
+    // }
+
+
+    /* fork */
+    __accmut__fork__eqclass(from, to);
+
+    if(MUTATION_ID == 0){
+        *addr = tobestore;
+        return 0;
+    }
+
+
+    // printf("CURR_MID: %d   PID: %d\n", MUTATION_ID, getpid());
+
+
+    /* apply the mutation */
+    m = ALLMUTS[MUTATION_ID];
+
+    if(m->type == STD){
+        return 1;
+    }
+
+    return __accmut__apply_store_mut(m, tobestore, addr, 0);
+}
 
 #endif
