@@ -39,6 +39,8 @@ typedef struct Eqclass {
 Eqclass eqclass[MMPL];
 int eq_num;
 
+#undef MMPL
+
 // Algorithms for Dynamic mutation anaylsis 
 
 void __accmut__filter__variant(int from, int to) {
@@ -123,22 +125,23 @@ long __accmut__fork__eqclass(int from, int to) {
 
          pid = fork();
 
-         // if(pid > 0){
-         //    getrusage(RUSAGE_SELF, &usage_fmid);
-         // }
-
          if(pid == 0) {
 
-            // getrusage(RUSAGE_SELF, &usage_cbegin);
-
              int r = setitimer(ITIMER_PROF, &tick, NULL);
+
              __accmut__filter__mutants(from, to, i);
+
+            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ | PROT_WRITE)) {
+                perror("mprotect ERR : PROT_READ | PROT_WRITE");
+                exit(errno);
+            }
+
              MUTATION_ID = eqclass[i].mut_id[0];
 
              // fprintf(stderr, "CHILD-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
 
             if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
-                perror("COULD NOT mprotect !");
+                perror("mprotect ERR : PROT_READ");
                 exit(errno);
             }
 
@@ -212,14 +215,19 @@ void __accmut__init(){
 }
 
 
+/**************************** ARITH ***************************************/
 int __accmut__process_i32_arith(int from, int to, int left, int right){
 
 	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->sop , left, right);
 
     __accmut__filter__variant(from, to);
 
-    // generate recent_set
     int i;
+    // for(i = 0; i < recent_num; ++i) {
+    //     printf("\trecent_set[%d] -> %d \n", i, recent_set[i]);
+    // }
+
+    // generate recent_set
     for(i = 0; i < recent_num; ++i) {
         if(recent_set[i] == 0) {
             temp_result[i] = ori;
@@ -288,7 +296,6 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
                 mut_res = __accmut__cal_i32_arith(m->op_0, left, right);
                 break;
             }
-
             default:
             {
                 ERRMSG("m->type ERR ");
@@ -308,6 +315,14 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 
     /* divide */
     __accmut__divide__eqclass();
+
+    // printf("EQNUM: %d\n", eq_num);
+    // for (int i = 0; i < eq_num; ++i)
+    // {
+    //     printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);
+    // }
+
+
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
 
@@ -418,6 +433,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 }// end __accmut__process_i64_arith
 
 
+/**************************** ICMP ***************************************/
 int __accmut__process_i32_cmp(int from, int to, int left, int right){
 
     int s_pre = ALLMUTS[to]->op_1;
@@ -425,6 +441,13 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 	int ori = __accmut__cal_i32_bool(s_pre , left, right);
 
     __accmut__filter__variant(from, to);
+
+// printf("FROM : %d, TO: %d, MID: %d, ORI: %d\n", from, to, MUTATION_ID, ori);
+
+// for (int i = 0; i < recent_num; ++i)
+// {
+//     printf("recent_set[%d]: %d\n", i, recent_set[i]);
+// }
 
     // generate recent_set
     int i;
@@ -434,7 +457,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
             continue;
         }
 
-        Mutation *m = ALLMUTS[MUTATION_ID];
+        Mutation *m = ALLMUTS[recent_set[i]];
         int mut_res;
 
         switch(m->type){        
@@ -510,13 +533,14 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
         }
         return temp_result[0];
     }
+
     /* divide */
     __accmut__divide__eqclass();
-    /* fork */
-    //int result = ori;
-    int result = __accmut__fork__eqclass(from, to);
-    return result;
 
+    /* fork */
+    int result = __accmut__fork__eqclass(from, to);
+
+    return result;
 }//end __accmut__process_i32_cmp
 
 int __accmut__process_i64_cmp(int from, int to, long left, long right){
@@ -535,7 +559,7 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
             continue;
         }
 
-        Mutation *m = ALLMUTS[MUTATION_ID];
+        Mutation *m = ALLMUTS[recent_set[i]];
         int mut_res;
 
         switch(m->type){        
@@ -612,14 +636,14 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
         }
         return temp_result[0];
     }
+
     /* divide */
     __accmut__divide__eqclass();
+    
     /* fork */
-    //int result = ori;
     int result = __accmut__fork__eqclass(from, to);
 
     return result;
-
 }// end __accmut__process_i64_cmp
 
 /**************************** CALL ***************************************/
@@ -1341,6 +1365,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
    /* divide */
     __accmut__divide__eqclass();
 
+    // printf("eq_num : %d\n", eq_num);
     // for (int i = 0; i < eq_num; ++i)
     // {
     //     printf("EQCLS %d -> val: %d, num: %d, mid: %d\n", i, eqclass[i].value, eqclass[i].num, eqclass[i].mut_id[0]);

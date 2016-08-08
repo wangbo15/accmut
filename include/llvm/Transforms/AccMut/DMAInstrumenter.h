@@ -28,10 +28,11 @@ public:
 	virtual bool runOnFunction(Function &F);
 	DMAInstrumenter(Module *M);	
 private:
-	void filtMutsByIndex(Function &F, vector<Mutation*>* v);
-	int instrument(Function &F, int index, int mut_from, int mut_to, int instrumented_insts);
-	//BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
-	Module *TheModule;
+	void instrument(Function &F, vector<Mutation*> * v);
+    BasicBlock::iterator getLocation(Function &F, int instrumented_insts, int index);
+    bool hasMutation(Instruction *inst, vector<Mutation*>* v);
+    bool needInstrument(Instruction *I, vector<Mutation*>* v);    
+    Module *TheModule;
 };
 
 #endif

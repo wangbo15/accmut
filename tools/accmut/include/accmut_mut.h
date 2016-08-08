@@ -14,6 +14,10 @@ typedef enum MTYPE{
 typedef struct Mutation{
 	MType type;
 
+#if ACCMUT_STATIC_ANALYSIS_EVAL	
+	int index;
+#endif
+
 	//src operand, for all muts
 	int sop;
 

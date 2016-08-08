@@ -1,5 +1,3 @@
-#if 0
-
 #ifndef ACCMUT_SMA_EVAL_H
 #define ACCMUT_SMA_EVAL_H
 
@@ -7,349 +5,424 @@
 #include<string.h>
 #include<stdlib.h>
 
-/*
-	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
-*/
 
-//FIX: MAXSIZE: 2000 , MAXCALLTIME : 200
-#define MAXSIZE (1<<15)	
-#define MAXMUTPERINST (1<<5)
-#define MAXCALLTIME (1<<8)
-///
-#define UNDEF 0xBEEFDEAD
+#include <accmut/accmut_arith_common.h>
 
-typedef struct Expression {
-    int id;
-    char type;
-    int op;
-    int larg;
-    int rarg;
-    int isTop;	// TODO:: rename to isButton ?
-    int root;
-}Expression;
+#define MAXINDEXNUM MAXMUTNUM
 
-typedef struct Mutation {
-    int exp;
-    int id;
-    char type[4];
-    int src;
-    int tar;
-    int index;// for LVR index
-    int flag;
-}Mutation;
+#define MAX_COV_TIME 1
 
-int EXP_COUNT = 0;
-int MUT_COUNT = 0;
+int COVERED_LOCATIONS[MAXINDEXNUM];
 
-Expression exps[MAXSIZE];
-Mutation muts[MAXSIZE];
+long ORIRES[MAXINDEXNUM];
 
-int parent[MAXSIZE];
-int flag[MAXSIZE];
+long MUTRES[MAXMUTNUM];
+
+int UNSUPORTED[MAXMUTNUM];
+
+int PARENT[MAXMUTNUM];
 
 
-//TODO : change fixed size global array to dynamic allocated memory.
-int eval_time[MAXSIZE]; // The eval times of an expression
-int eval_value[MAXSIZE][MAXMUTPERINST][MAXCALLTIME]; // The eval value of an expression at a mutation each time
+/**************************** ARITH ***************************************/
 
-/*
-	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
-*/
-int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
-	switch(op){
-		case 14: return a + b;
-		case 16: return a - b;
-		case 18: return a * b;
-		case 20: {
-			if(b == 0)
-				return UNDEF;
-			else
-				return ((unsigned)a) / ((unsigned)b);	
-			}
-		case 21: {
-			if(b==0)
-				return UNDEF;
-			else
-				return a / b;
-			}
-		case 23: {
-			if(b==0)
-				return UNDEF;
-			else
-				return ((unsigned)a) % ((unsigned)b);
-			}
-		case 24: {
-			if(b==0)
-				return UNDEF;
-			else
-				return a % b;
-			}
-		case 26: return a << b;
-		case 27: return ((unsigned)a) >> ((unsigned)b);
-		case 28: return a >> b;
-		case 29: return a & b;
-		case 30: return a | b;
-		case 31: return a ^ b;
-		default:
-			fprintf(stderr, "ERROR : __accmut__cal_i32_arith !!!\n");
-			exit(0);
-	}
-}
+int __accmut__process_i32_arith(int from, int to, int left, int right){
 
-/*
-	STATIC ANALYSIS DO NOT NEED "accmut_arith_common.h"
-*/
-int __accmut__cal_i32_bool(int pre, int a, int b){
-	switch(pre){
-		case 32: return a == b;
-		case 33: return a != b;
-		case 34: return ((unsigned) a) > ((unsigned) b);
-		case 35: return ((unsigned) a) >= ((unsigned) b);
-		case 36: return ((unsigned) a) < ((unsigned) b);
-		case 37: return ((unsigned) a) <= ((unsigned) b);
-		case 38: return a > b;
-		case 39: return a >= b;
-		case 40: return a < b;
-		case 41: return a <= b;
-		default:
-			fprintf(stderr, "ERROR : __accmut_cal_i32_bool !!!\n");
-			exit(0);
-	}
-}
+	int ori = __accmut__cal_i32_arith(ALLMUTS[to]->sop , left, right);
 
-int __accmut__eval_i32(int id, int left, int right){
-    int origin_op = exps[id].op;
-    char tp =  exps[id].type;
-    int lid = exps[id].larg;
-    int rid = exps[id].rarg;
-    int ori;
-    if(tp == 'a'){
-    	ori = __accmut__cal_i32_arith(origin_op, left, right); //opcode, left, right
-    }else if(tp == 'c'){
-    	ori = __accmut__cal_i32_bool(origin_op, left, right); // pre, left, right
-    }else{
-    	fprintf(stderr, "ERROR TYPE --> EXPRID: %d TP: %c \n", id, tp);
-    	exit(0);
+    //printf("ARI FROM: %d  TO: %d  SPRE : %d  ORI: %d\n", from, to, ALLMUTS[to]->sop, ori);
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] > 0){
+        return ori;
     }
-    int mid;
-	int lval, rval;
-    for(mid = 1; mid <= MUT_COUNT; mid++){
-		if(lid == 0) {
-			lval = left;
-		}else{
-			lval = eval_value[lid][mid][eval_time[lid]-1]; 
-		}
-		if(rid == 0) {
-			rval = right;
-		} else {
-			rval = eval_value[rid][mid][eval_time[rid]-1];
-		}    
-		int new_value = UNDEF;
-		if(muts[mid].exp == id){		
-			if(!strcmp(muts[mid].type, "LVR")){
-				int tar = muts[mid].tar;
-				if(muts[mid].index == 0){// first operand
-					if(tp == 'a'){
-						new_value = __accmut__cal_i32_arith(origin_op, tar, rval); //opcode, tar, right
-					}else if(tp == 'c'){
-						new_value = __accmut__cal_i32_bool(origin_op, tar, rval); // pre, tar, right
-					}else{
-						fprintf(stderr, "ERROR TYPE --> EXPRID: %d TP: %c \n", id, tp);
-						exit(0);
-					}
-				}else{//second operand
-					if(tp == 'a'){
-						new_value = __accmut__cal_i32_arith(origin_op, lval, tar); //opcode, left, tar
-					}else if(tp == 'c'){
-						new_value = __accmut__cal_i32_bool(origin_op, lval, tar); // pre, left, tar
-					}else{
-						fprintf(stderr, "ERROR TYPE --> EXPRID: %d TP: %c \n", id, tp);
-						exit(0);
-					}				
-				}
-			}else{
-				int tar = muts[mid].tar;
-				if(tp == 'a'){
-					new_value = __accmut__cal_i32_arith(tar, lval, rval); //opcode, left, right
-				}else if(tp == 'c'){
-					new_value = __accmut__cal_i32_bool(tar, lval, rval); // pre, left, right
-				}else{
-					fprintf(stderr, "ERROR TYPE --> EXPRID: %d TP: %c \n", id, tp);
-					exit(0);
-				}				
-			}
-			
-				
-		}else{	//?????
-			if(tp == 'a'){
-				new_value = __accmut__cal_i32_arith(origin_op, lval, rval); //opcode, left, right
-			}else if(tp == 'c'){
-				new_value = __accmut__cal_i32_bool(origin_op, lval, rval); // pre, left, right
-			}else{
-				fprintf(stderr, "ERROR TYPE --> EXPRID: %d TP: %c \n", id, tp);
-				exit(0);
-			}					
-		}
-		
-		//fprintf(stderr, "EXPR: %d\tMID: %d\tTAR: %d\tTIME: %d\tL: %d\tR: %d\tNWVALUE: %d\n", id, mid, muts[mid].tar, eval_time[id], lval, rval,  new_value);
-        eval_value[id][mid][eval_time[id]] = new_value; // set new value of a mutation
-    }//end for
-    
-    eval_value[id][0][eval_time[id]] = ori;
-    if(eval_time[id] < MAXCALLTIME-1){
-    	eval_time[id] += 1;
-    }
-	return ori;
-}
+    COVERED_LOCATIONS[idx]++;
+    ORIRES[idx] = ori;
 
-void __accmut__init(){
-	//load expr.txt
-	char path[256];
-	strcpy(path, getenv("HOME"));
-	strcat(path, "/tmp/accmut/expr.txt");
-	FILE * file = fopen(path, "r");
-	if(file == NULL){
-		fprintf(stderr, "FILE ERR : %s\n", path);
-		exit(0);
-	}
-	int count = 1;
-    while(fscanf(file, "%d %c %d %d %d\n", &exps[count].id, &exps[count].type, &exps[count].op, &exps[count].larg, &exps[count].rarg) != EOF) {
-    	++count;
-    }
-    EXP_COUNT = count - 1;
-    fclose(file);
-    //load mut.txt
-    strcpy(path, getenv("HOME"));
-	strcat(path, "/tmp/accmut/mut.txt");
-	file = fopen(path, "r");
-	if(file == NULL){
-		fprintf(stderr, "FILE ERR : %s\n", path);
-		exit(0);
-	}
-	char buff[50];	
-	char tail[20];
-	count = 1;
-	while(fgets(buff, 50, file)){
-		sscanf(buff, "%d:%d:%3s:%s", &muts[count].exp, &muts[count].id, muts[count].type, tail);
-		//fprintf(stderr, "TYPE : %s\tTAIL %s\n", muts[count].type, tail);
-		if(!strcmp(muts[count].type, "AOR")){
-			sscanf(tail, "%d:%d", &muts[count].src, &muts[count].tar);
-		}else if(!strcmp(muts[count].type, "LVR")){
-			sscanf(tail, "%*d:%d:%d:%d", &muts[count].index, &muts[count].src, &muts[count].tar);
-		}else if(!strcmp(muts[count].type, "ROR")){
-			sscanf(tail, "%*d:%d:%d", &muts[count].src, &muts[count].tar);
-		}else if(!strcmp(muts[count].type, "LOR")){
-			sscanf(tail, "%d:%d", &muts[count].src, &muts[count].tar);
-		}else{
-			fprintf(stderr, "MUT TYPE ERR @  __accmut__sma_init() : %s\n", muts[count].type);
-			exit(0);
-		}
-		count++;
-	}
-	MUT_COUNT = count - 1;
-	fclose(file);
-	//
-	int i;
-    for(i = 1; i <= EXP_COUNT; ++i) {
-        exps[i].isTop = 1;
-    }
-    for(i = 1; i <= EXP_COUNT; ++i) {
-        int lid = exps[i].larg;
-        int rid = exps[i].rarg;
-        if(lid != 0) {
-            exps[lid].isTop = 0;
-        }
-        if(rid != 0) {
-            exps[rid].isTop = 0;
-        }
-    }
-    
-#if 0
-    fprintf(stderr, "---------------- DUMP INIT ------------\n");
-    for(i = 1; i <= EXP_COUNT; ++i) {
-        fprintf(stderr, "EXPR: %d %c %d %d %d \n", exps[i].id, exps[i].type, exps[i].op, exps[i].larg, exps[i].rarg); 
-    }
-    for(i = 1; i <= MUT_COUNT; ++i) {
-        fprintf(stderr, "MUT: %d %d %s %d %d %d\n", muts[i].exp, muts[i].id, muts[i].type, muts[i].src, muts[i].tar, muts[i].index);
-    }
-    fprintf(stderr, "EXP_COUNT: %d MID_CNT: %d\n", EXP_COUNT, MUT_COUNT);
-    fprintf(stderr, "---------------- DUMP INIT END ------------\n");
-#endif
-
-}
-
-int __accmut__equal_mut(mid1, mid2){
-	int eid;
-	for(eid = 1; eid <= EXP_COUNT; eid++){
-		if(!exps[eid].isTop){
-			continue; // only compare top expression
-		}
-		int k;
-		for(k = 0; k < eval_time[eid]; k++){
-            if(eval_value[eid][mid1][k] != eval_value[eid][mid2][k]) {
-                return 0;
-            }			
-		}
-	}
-	return 1;
-}
-
-void __accmut__init_set(){
     int i;
-    for(i = 0; i <= MUT_COUNT; ++i) {
-        parent[i] = i;
-        flag[i] = 0;
+    for(i = from; i <= to; ++i) {
+
+        if(UNSUPORTED[i] > 0){
+            continue;
+        }
+
+        Mutation *m = ALLMUTS[i];
+        int mut_res;
+        switch(m->type){
+            case LVR:
+            {
+                if(m->op_0 == 0){
+                    mut_res = __accmut__cal_i32_arith(m->sop, m->op_2, right);
+                }else{
+                    mut_res = __accmut__cal_i32_arith(m->sop, left, m->op_2);
+                }
+                break;
+            }
+            case ROV:
+            {
+                mut_res = __accmut__cal_i32_arith(m->sop , right, left);
+                break;
+            } 
+            case AOR:
+            case LOR:
+            {
+                mut_res = __accmut__cal_i32_arith(m->op_0, left, right);
+                break;
+            }
+            default:
+            {
+
+            }
+        }//end switch
+        MUTRES[i] = mut_res;
+    }//end for i
+
+    return ori;
+}// end __accmut__process_i32_arith
+
+long __accmut__process_i64_arith(int from, int to, long left, long right){
+    
+    int ori = __accmut__cal_i64_arith(ALLMUTS[to]->sop , left, right);
+    
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] > 0){
+        return ori;
+    }
+    COVERED_LOCATIONS[idx]++;
+    ORIRES[idx] = ori;
+
+    int i;
+    for(i = from; i <= to; ++i) {
+
+        if(UNSUPORTED[i] > 0){
+            continue;
+        }
+
+        Mutation *m = ALLMUTS[i];
+        int mut_res;
+        switch(m->type){
+            case LVR:
+            {
+                if(m->op_0 == 0){
+                    mut_res = __accmut__cal_i64_arith(m->sop, m->op_2, right);
+                }else{
+                    mut_res = __accmut__cal_i64_arith(m->sop, left, m->op_2);
+                }
+                break;
+            }
+            case ROV:
+            {
+                mut_res = __accmut__cal_i64_arith(m->sop , right, left);
+                break;
+            } 
+            case AOR:
+            case LOR:
+            {
+                mut_res = __accmut__cal_i64_arith(m->op_0, left, right);
+                break;
+            }
+            default:
+            {
+
+            }
+        }//end switch
+        MUTRES[i] = mut_res;
+    }//end for i
+
+    return ori;
+}// end __accmut__process_i64_arith
+
+
+/**************************** ICMP ***************************************/
+int __accmut__process_i32_cmp(int from, int to, int left, int right){
+
+    int spre = ALLMUTS[to]->op_1;
+
+    int ori = __accmut__cal_i32_bool(spre , left, right);
+
+    //printf("CMP FROM: %d  TO: %d  SPRE: %d  ORI: %d\n", from, to, ALLMUTS[to]->sop, ori);
+
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] > 0){
+        return ori;
+    }
+    COVERED_LOCATIONS[idx]++;
+    ORIRES[idx] = ori;
+
+    int i;
+    for(i = from; i <= to; ++i) {
+
+        if(UNSUPORTED[i] > 0){
+            continue;
+        }
+
+        Mutation *m = ALLMUTS[i];
+        int mut_res;
+        switch(m->type){
+            case LVR:
+            {
+                if(m->op_0 == 0){
+                    mut_res = __accmut__cal_i32_bool(spre, m->op_2, right);
+                }else{
+                    mut_res = __accmut__cal_i32_bool(spre, left, m->op_2);
+                }
+                break;
+            }
+            case ROV:
+            {
+                mut_res = __accmut__cal_i32_bool(spre , right, left);
+                break;
+            } 
+            case ROR:
+            {
+                mut_res = __accmut__cal_i32_bool(m->op_2, left, right);
+                break;
+            }
+            default:
+            {
+
+            }
+        }//end switch
+        MUTRES[i] = mut_res;
+    }//end for i
+    return ori;
+}//end __accmut__process_i32_cmp
+
+int __accmut__process_i64_cmp(int from, int to, long left, long right){
+
+    int spre = ALLMUTS[to]->op_1;
+
+    int ori = __accmut__cal_i64_bool(spre , left, right);
+
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] > 0){
+        return ori;
+    }
+    COVERED_LOCATIONS[idx]++;
+    ORIRES[idx] = ori;
+
+    int i;
+    for(i = from; i <= to; ++i) {
+
+        if(UNSUPORTED[i] > 0){
+            continue;
+        }
+
+        Mutation *m = ALLMUTS[i];
+        int mut_res;
+        switch(m->type){
+            case LVR:
+            {
+                if(m->op_0 == 0){
+                    mut_res = __accmut__cal_i64_bool(spre, m->op_2, right);
+                }else{
+                    mut_res = __accmut__cal_i64_bool(spre, left, m->op_2);
+                }
+                break;
+            }
+            case ROV:
+            {
+                mut_res = __accmut__cal_i64_bool(spre , right, left);
+                break;
+            } 
+            case ROR:
+            {
+                mut_res = __accmut__cal_i32_bool(m->op_2, left, right);
+                break;
+            }
+            default:
+            {
+ 
+            }
+        }//end switch
+        MUTRES[i] = mut_res;
+    }//end for i
+    return ori;
+}// end __accmut__process_i64_cmp
+
+/**************************** CALL and Store ***************************************/
+
+int __accmut__prepare_call(int from, int to, int opnum, ...){
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] == 0){
+        COVERED_LOCATIONS[idx]++;
+    }
+    return 0;
+}
+
+int __accmut__stdcall_i32(){
+    return ALLMUTS[MUTATION_ID]->op_2;
+}
+
+long __accmut__stdcall_i64(){
+    return ALLMUTS[MUTATION_ID]->op_2;
+}
+
+void __accmut__stdcall_void(){/*do nothing*/}
+
+
+int __accmut__prepare_st_i32(int from, int to, int tobestore, int* addr){
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] == 0){
+        COVERED_LOCATIONS[idx]++;
+    }
+    *addr = tobestore;
+    return 0;
+}
+
+int __accmut__prepare_st_i64(int from, int to, long tobestore, long* addr){
+    int idx = ALLMUTS[to]->index;
+    if(COVERED_LOCATIONS[idx] == 0){
+        COVERED_LOCATIONS[idx]++;
+    }
+    *addr = tobestore;
+    return 0;
+}
+
+void __accmut__std_store(){/*donothing*/}
+
+
+/*************************************************************************/
+
+static void __accmut__init_set(){
+    int i;
+    for(i = 0; i <= MUT_NUM; ++i) {
+        PARENT[i] = i;
     }
 }
 
-void __accmut__union_set(int i, int j) {
-    parent[j] = i;
+static void __accmut__union_set(int i, int j) {
+    PARENT[j] = i;
 }
 
-int __accmut__find_set(int k) {
-    while(parent[k] != k) {
-        k = parent[k];
+static int __accmut__find_set(int k) {
+    while(PARENT[k] != k) {
+        k = PARENT[k];
     }
     return k;
 }
 
-void __accmut__output_set() {
-    //fprintf(stderr, "SET NUM %d\n", MUT_COUNT);
+static void __accmut__output_set() {
+    __accmut__init_set();
+
+    int i , j;
+    for(i = 1; i <= MUT_NUM; i++){
+        int loci = ALLMUTS[i]->index;
+
+        printf("%d => LOC: %d , COVED: %d , ORES: %d, MUTRES: %d, UNSUP: %d\n", 
+            i, loci, COVERED_LOCATIONS[loci], ORIRES[loci], MUTRES[i], UNSUPORTED[i]);
+    }
+
 
 	char path[256];
 
 	sprintf(path, "%s/tmp/accmut/input/%s/t%d", getenv("HOME"), PROJECT, TEST_ID);	
 
-	FILE* fp = fopen(path ,"w");
+	// FILE* fp = fopen(path ,"w");
+    FILE* fp = stderr;
 
 	if(fp == NULL){
-		fprintf(stderr, "OPEN ERR @__accmut__output_set : %s\n", path);
+		ERRMSG("FOPEN ERR");
 		exit(1);
 	}
 
-    int i;
-    for(i = 0; i <= MUT_COUNT; ++i) {
-        int root = __accmut__find_set(i);
-        fprintf(fp, "%d:%d\n", muts[i].id, muts[root].id);
-        flag[root] = 1;
+    for(i = 1; i <= MUT_NUM; ++i) {
+        int loci = ALLMUTS[i]->index;
+
+        if(COVERED_LOCATIONS[loci] == 0){
+            continue;
+        }
+
+        for(j = i; j <= MUT_NUM; j++){
+            if(ALLMUTS[j]->index != loci)
+                break;
+        }
+
+        j--;
+
+        printf("--- I : %d J : %d\n",i, j);
+
+        int k;
+
+        for(k = i; k <= j; k++){
+            if(UNSUPORTED[k] == 1){
+                continue;
+            }
+            if(MUTRES[k] == ORIRES[loci]){
+                __accmut__union_set(0, k);
+                continue;
+            }
+            int m;
+            for(m = k+1; m <= j; m++){
+                if(UNSUPORTED[k] == 1){
+                    //fprintf(fp, "%d:-1\n", k);
+                    continue;
+                }
+                // if(MUTRES[m] == ORIRES[loci]){
+                //     __accmut__union_set(0, m);
+                //     continue;
+                // }
+                if(MUTRES[m] == MUTRES[k]){
+                    __accmut__union_set(k, m);
+                }
+            }
+        }
+
+        i = j;
+    }
+
+    for(i = 0; i <= MUT_NUM; i++){
+        printf("PARENT OF %d -> %d \n", i, PARENT[i]);
+    }
+
+
+    fprintf(fp, "0:0\n");
+
+    for(i = 1; i <= MUT_NUM; ++i) {
+        int loci = ALLMUTS[i]->index;
+
+        if(COVERED_LOCATIONS[loci] == 0){
+            continue;
+        }
+        if(UNSUPORTED[i] == 1){
+            fprintf(fp, "%d:-1\n", i);
+        }else{
+            int p = __accmut__find_set(i);
+            fprintf(fp, "%d:%d\n", i, p);            
+        }
     }
     fclose(fp);
     //fprintf(stderr, "SMA EVAL END FOR TEST %d\n", TEST_ID);
+
 }
 
-void __accmut__eval_analysis(){
-	__accmut__init_set();
-	int i, j;
-    for(i = 0; i < MUT_COUNT; ++i) {
-        for(j = i+1; j <= MUT_COUNT; ++j) {
-            if(__accmut__equal_mut(i, j)) {
-                __accmut__union_set(i, j);
-            }
+#define CALLSOP 55
+#define STSOP 34
+
+void __accmut__init(){
+
+    atexit(__accmut__output_set);
+
+    if(TEST_ID < 0){
+        ERRMSG("TEST_ID NOT INIT");
+        exit(0);
+    }
+
+    __accmut__load_all_muts();
+
+    int i;
+    for(i = 1; i <= MUT_NUM; i++){
+        if(ALLMUTS[i]->sop == 34 || ALLMUTS[i]->sop == 55){
+            UNSUPORTED[i] = 1;
+        }else if((ALLMUTS[i]->type != LVR) && (ALLMUTS[i]->type != ROV) && (ALLMUTS[i]->type != AOR)
+                && (ALLMUTS[i]->type != LOR) && (ALLMUTS[i]->type != ROR)){
+            UNSUPORTED[i] = 1;
         }
     }
-	__accmut__output_set();
+
 }
 
-#endif
+#undef STSOP
+#undef CALLSOP
+/*************************************************************************/
 
 #endif
+

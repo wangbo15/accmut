@@ -22,12 +22,12 @@
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 0
+#define ACCMUT_STATIC_ANALYSIS_EVAL 1
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 
 //for DMA FORK
@@ -36,7 +36,9 @@
 #define PAGESIZE 4096
 
 // const char PROJECT[]="printtokens";
-const char PROJECT[]="flex";
+const char PROJECT[]="test";
+
+
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
 	int HOLDER[1024] __attribute__((aligned(0x1000))) = {0};
@@ -73,7 +75,7 @@ unsigned long long EXEC_INSTS = 0;
 #include "accmut_async_sig_safe_string.h"
 
 Mutation* ALLMUTS[MAXMUTNUM + 1];
-int MAX_MUT_NUM;
+int MUT_NUM;
 int *MUTS_ON;
 
 #define MAX_PARAM_NUM 16 
@@ -106,13 +108,10 @@ void __accmut__exit_time(){
 
 	gettimeofday(&tv_end, NULL);
 
-	//double interval = (double)(tv_end.tv_sec - tv_begin.tv_sec) + ((double)(tv_end.tv_usec - tv_begin.tv_usec))/1000000;
-
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
 	int fd = open("timeres", O_WRONLY | O_CREAT | O_APPEND);
-	//char res[128] = "ATEXIT\t";
 
 	char res[128];
 	__accmut__strcat(res, __accmut__itoa(TEST_ID, 10));
@@ -184,12 +183,16 @@ void __accmut__load_all_muts(){
 	char buff[MUTFILELINE];	
 	char tail[40];
 	while(fgets(buff, MUTFILELINE, fp)){
-		//fprintf(stderr, "%s", buff);
-		sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 
-		//fprintf(stderr, "%d -- %s --  %s\n", id, type, tail);
-
-		Mutation* m = (Mutation *)malloc(sizeof(Mutation));
+		#if ACCMUT_STATIC_ANALYSIS_EVAL
+			int idx;
+			sscanf(buff, "%3s:%*[^:]:%d:%s", type, &idx, tail);
+			Mutation* m = (Mutation *)malloc(sizeof(Mutation));		
+			m->index = idx;
+		#else
+			sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
+			Mutation* m = (Mutation *)malloc(sizeof(Mutation));	
+		#endif
 
 		if(!strcmp(type, "AOR")){
 			m->type = AOR;
@@ -259,18 +262,24 @@ void __accmut__load_all_muts(){
 		ALLMUTS[id] = m;
 		id++;
 	}
-	MAX_MUT_NUM = id - 1;
+	MUT_NUM = id - 1;
 
 	#if 1
 	fprintf(stderr, "\n----------------- DUMP ALL MUTS ------------------\n");
-	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MAX_MUT_NUM);
+	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MUT_NUM);
 	int i;
-	for(i = 1; i <= MAX_MUT_NUM; i++){
+	for(i = 1; i <= MUT_NUM; i++){
 		Mutation *m = ALLMUTS[i];
-		fprintf(stderr, "MUT %d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
-			 i, m->type, m->sop, m->op_0, m->op_1, m->op_2);
+	
+		#if ACCMUT_STATIC_ANALYSIS_EVAL
+			fprintf(stderr, "MUT %d => IDX: %d , TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
+				i, m->index, m->type, m->sop, m->op_0, m->op_1, m->op_2);
+		#else
+			fprintf(stderr, "MUT %d => TP: %d , SOP: %d , OP0 : %d , OP1 : %d , OP2 : %d\n",
+				i, m->type, m->sop, m->op_0, m->op_1, m->op_2);
+		#endif
 	}
-	fprintf(stderr, "----------------- END DUMP ALL MUTS ---------------\n");
+	fprintf(stderr, "----------------- END DUMP ALL MUTS ---------------\n\n");
 
 	#endif
 }
