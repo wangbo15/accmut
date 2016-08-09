@@ -57,7 +57,12 @@ void __accmut__mainfork(int id){
 
 }
 
+
 void __accmut__init(){
+	
+    gettimeofday(&tv_begin, NULL);
+    
+    atexit(__accmut__exit_time);
 
 	__accmut__sepcific_timer();
 
@@ -76,22 +81,47 @@ void __accmut__init(){
 	__accmut__load_all_muts();
 
 
-	MUTS_ON = (int *) malloc( (sizeof(int)) * (MAX_MUT_NUM + 1) );
+	MUTS_ON = (int *) malloc( (sizeof(int)) * (MUT_NUM + 1) );
 	
 	int i;
-	for(i = 0; i < MAX_MUT_NUM + 1; i++){
+	for(i = 0; i < MUT_NUM + 1; i++){
 		*(MUTS_ON + i) = 1;
 	}
-    
-   	for(i = 1; i < MAX_MUT_NUM + 1; i++){
+
+
+#if ACCMUT_STATIC_ANALYSIS_FORK_CALL
+	char path[128];
+	sprintf(path, "%s%s%s/t%d", getenv("HOME"), "/tmp/accmut/input/", PROJECT, TEST_ID);
+		
+	FILE* fp = fopen(path, "r");
+	
+	if(fp == 0){
+		ERRMSG("SMA FOEPN ERR");
+		exit(0);
+	}
+	int curmut, on_id;
+	int killed = 0;
+	while(fscanf(fp,"%d:%d", &curmut, &on_id) != EOF){
+			if(curmut != on_id){
+				//fprintf(stderr,"CURMUT: %d, ON_ID: %d\n", curmut, on_id);
+				*(MUTS_ON + curmut) = 0;
+				killed++;
+			}				                	            
+    }
+    fclose(fp);
+#endif
+
+
+   	for(i = 1; i < MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
 	}
 	
-
 	/*if(MUTATION_ID == 0){
 		fprintf(stderr, "%d\n",	totalfork);
 	}*/
 }
+
+
 
 /*
 *must fellow the type seq: (i8 type, i8 index, i64* ptr ...)

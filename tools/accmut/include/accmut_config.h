@@ -22,9 +22,9 @@
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 1
+#define ACCMUT_STATIC_ANALYSIS_EVAL 0
 #define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
 
 //SWITCH FOR DYNAMIC ANALYSIS
 #define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
@@ -35,9 +35,8 @@
 
 #define PAGESIZE 4096
 
-// const char PROJECT[]="printtokens";
-const char PROJECT[]="test";
 
+const char PROJECT[]="test";
 
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -111,14 +110,22 @@ void __accmut__exit_time(){
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
 
-	int fd = open("timeres", O_WRONLY | O_CREAT | O_APPEND);
+#if ACCMUT_STATIC_ANALYSIS_EVAL
+	char* path = "evaltime";
+#else
+	char *path = "timeres";
+#endif
 
-	char res[128];
+	int fd = open(path, O_WRONLY | O_CREAT | O_APPEND);
+
+	char res[128] = {0};
+
 	__accmut__strcat(res, __accmut__itoa(TEST_ID, 10));
 	__accmut__strcat(res, "\t");
 
 	__accmut__strcat(res, __accmut__itoa(real_sec, 10));
 	__accmut__strcat(res, "\t");
+
 	__accmut__strcat(res, __accmut__itoa(real_usec, 10));
 	__accmut__strcat(res, "\n");
 
@@ -136,7 +143,7 @@ void __accmut__handler(int sig){
 }
 
 void __accmut__sepcific_timer(){
-	char path[128];
+	char path[128] = {0};
 	sprintf(path, "%s%s%d", getenv("HOME"), "/tmp/accmut/oritime/", TEST_ID);
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
@@ -305,7 +312,7 @@ void __accmut__load_all_muts(){
 
 
 #if ACCMUT_STATIC_ANALYSIS_FORK_CALL
-	#include<accmut/accmut_sma_callfork.h>
+	#include<accmut/accmut_schem.h>
 #endif
 
 

@@ -303,21 +303,21 @@ static int __accmut__find_set(int k) {
 static void __accmut__output_set() {
     __accmut__init_set();
 
-    int i , j;
-    for(i = 1; i <= MUT_NUM; i++){
-        int loci = ALLMUTS[i]->index;
+    // int i , j;
+    // for(i = 1; i <= MUT_NUM; i++){
+    //     int loci = ALLMUTS[i]->index;
 
-        printf("%d => LOC: %d , COVED: %d , ORES: %d, MUTRES: %d, UNSUP: %d\n", 
-            i, loci, COVERED_LOCATIONS[loci], ORIRES[loci], MUTRES[i], UNSUPORTED[i]);
-    }
+    //     printf("%d => LOC: %d , COVED: %d , ORES: %d, MUTRES: %d, UNSUP: %d\n", 
+    //         i, loci, COVERED_LOCATIONS[loci], ORIRES[loci], MUTRES[i], UNSUPORTED[i]);
+    // }
 
 
 	char path[256];
 
 	sprintf(path, "%s/tmp/accmut/input/%s/t%d", getenv("HOME"), PROJECT, TEST_ID);	
 
-	// FILE* fp = fopen(path ,"w");
-    FILE* fp = stderr;
+	FILE* fp = fopen(path ,"w");
+    // FILE* fp = stderr;
 
 	if(fp == NULL){
 		ERRMSG("FOPEN ERR");
@@ -338,7 +338,7 @@ static void __accmut__output_set() {
 
         j--;
 
-        printf("--- I : %d J : %d\n",i, j);
+        // printf("--- I : %d J : %d\n",i, j);
 
         int k;
 
@@ -353,13 +353,8 @@ static void __accmut__output_set() {
             int m;
             for(m = k+1; m <= j; m++){
                 if(UNSUPORTED[k] == 1){
-                    //fprintf(fp, "%d:-1\n", k);
                     continue;
                 }
-                // if(MUTRES[m] == ORIRES[loci]){
-                //     __accmut__union_set(0, m);
-                //     continue;
-                // }
                 if(MUTRES[m] == MUTRES[k]){
                     __accmut__union_set(k, m);
                 }
@@ -368,11 +363,6 @@ static void __accmut__output_set() {
 
         i = j;
     }
-
-    for(i = 0; i <= MUT_NUM; i++){
-        printf("PARENT OF %d -> %d \n", i, PARENT[i]);
-    }
-
 
     fprintf(fp, "0:0\n");
 
@@ -389,8 +379,30 @@ static void __accmut__output_set() {
             fprintf(fp, "%d:%d\n", i, p);            
         }
     }
+
     fclose(fp);
-    //fprintf(stderr, "SMA EVAL END FOR TEST %d\n", TEST_ID);
+
+
+    int cbu = 0;
+    int pnum = 0;
+    for(i = 1; i <= MUT_NUM; i++){
+        int loci = ALLMUTS[i]->index;
+        if(COVERED_LOCATIONS[loci] == 0){
+            continue;
+        }
+        if(UNSUPORTED[i] == 1){
+            cbu++;
+            continue;
+        }
+        int p = __accmut__find_set(i);
+        if(p == i){
+            pnum++;
+        }
+    }
+    fprintf(stderr, "########## SMA EVAL END ##########\n");
+    fprintf(stderr, "TOTAL MUT: %d\n", MUT_NUM);
+    fprintf(stderr, "COVED BUT UNSUPORTED: %d\n", cbu);
+    fprintf(stderr, "PARENT NUM: %d\n", pnum + cbu);
 
 }
 
@@ -399,6 +411,9 @@ static void __accmut__output_set() {
 
 void __accmut__init(){
 
+    gettimeofday(&tv_begin, NULL);
+
+    atexit(__accmut__exit_time);
     atexit(__accmut__output_set);
 
     if(TEST_ID < 0){
@@ -410,7 +425,7 @@ void __accmut__init(){
 
     int i;
     for(i = 1; i <= MUT_NUM; i++){
-        if(ALLMUTS[i]->sop == 34 || ALLMUTS[i]->sop == 55){
+        if(ALLMUTS[i]->sop == STSOP || ALLMUTS[i]->sop == CALLSOP){
             UNSUPORTED[i] = 1;
         }else if((ALLMUTS[i]->type != LVR) && (ALLMUTS[i]->type != ROV) && (ALLMUTS[i]->type != AOR)
                 && (ALLMUTS[i]->type != LOR) && (ALLMUTS[i]->type != ROR)){

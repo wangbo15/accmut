@@ -190,6 +190,10 @@ void __accmut__SIGSEGV__handler(){
 
 void __accmut__init(){
 
+    gettimeofday(&tv_begin, NULL);
+    
+    atexit(__accmut__exit_time);
+
     __accmut__sepcific_timer();
 
     tick.it_value.tv_sec = VALUE_SEC;  // sec
