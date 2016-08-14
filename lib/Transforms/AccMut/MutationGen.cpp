@@ -93,6 +93,11 @@ void MutationGen::genMutationFile(Function & F){
 					break;
 				}
 				case Instruction::ICmp:{
+					if(! (BI->getOperand(0)->getType()->isIntegerTy(32) ||
+						BI->getOperand(0)->getType()->isIntegerTy(64)) ){
+						continue;
+					}
+
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);	
 					genROV(BI, F.getName(), index);
@@ -123,6 +128,10 @@ void MutationGen::genMutationFile(Function & F){
 					if(name.startswith("llvm")){//omit llvm inside functions
 						continue;
 					}
+					//TODO:: add for malloc
+					if(BI->getType()->isPointerTy()){
+						continue;
+					}
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
@@ -131,6 +140,14 @@ void MutationGen::genMutationFile(Function & F){
 					break;
 				}
 				case Instruction::Store:{
+
+					auto addr = BI->op_begin() + 1;// the pointer of the storeinst
+					//TODO:: omit getelementptr now 
+					if( !(dyn_cast<LoadInst>(&*addr) || dyn_cast<AllocaInst>(&*addr) 
+						|| dyn_cast<Constant>(&*addr))){
+						continue;
+					}
+					
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genABV(BI, F.getName(), index);	

@@ -19,16 +19,16 @@
 #include <fcntl.h>
 
 
+#define ACCMUT_ORI_TEST 0
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_INLINE 0
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
+
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
-
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 //for DMA FORK
 #define MAXMUTNUM 32768
@@ -36,7 +36,7 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="test";
+const char PROJECT[]="printtokens";
 
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -54,7 +54,7 @@ struct itimerval tick;
 long VALUE_SEC = 0;
 long VALUE_USEC = 0;
 long INTTERVAL_SEC = 0;
-long INTTERVAL_USEC = 5;
+long INTTERVAL_USEC = 50;
 
 struct timeval tv_begin, tv_end;
 struct rusage usage_fbegin, usage_fmid, usage_fend;
@@ -96,12 +96,18 @@ typedef struct PrepareCallParam{
 #define ERRMSG(msg) fprintf(stderr, "%s @ %s->%s():%d\tMID: %d\tTID: %d\n", \
 	msg,__FILE__, __FUNCTION__, __LINE__, MUTATION_ID, TEST_ID)
 
+#define ERRMSG2(msg,i) fprintf(stderr, "%s : %d @ %s->%s():%d\tMID: %d\tTID: %d\n", \
+	msg, i,__FILE__, __FUNCTION__, __LINE__, MUTATION_ID, TEST_ID)
+
 /************* ALL EXIT HANDLER ***************************/
 void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
 
 	if(MUTATION_ID != 0){
+
+		//__accmut__filedump(accmut_stdout);
+
 		return;
 	}
 
@@ -109,6 +115,12 @@ void __accmut__exit_time(){
 
 	long real_sec =  tv_end.tv_sec - tv_begin.tv_sec;
 	long real_usec = tv_end.tv_usec - tv_begin.tv_usec;
+
+	if(real_usec < 0){
+		real_sec--;
+		real_usec += 1000000;
+	}
+
 
 #if ACCMUT_STATIC_ANALYSIS_EVAL
 	char* path = "evaltime";
@@ -131,20 +143,58 @@ void __accmut__exit_time(){
 
 	write(fd, res, __accmut__strlen(res));
 	close(fd);
+
+	//__accmut__filedump(accmut_stdout);
 }
+
+void __accmut__SIGSEGV__handler(){
+	
+	int fd = 2;
+
+	char msg[128] = {0};
+
+	__accmut__strcat(msg, "SIGSEGV: ");
+	__accmut__strcat(msg, __accmut__itoa(TEST_ID, 10));
+	__accmut__strcat(msg, "\t");
+
+	__accmut__strcat(msg, __accmut__itoa(MUTATION_ID, 10));
+	__accmut__strcat(msg, "\n");
+
+	write(fd, msg, __accmut__strlen(msg));
+
+#if 1
+	_exit(1);
+	// kill(getpid(), SIGKILL);
+#else
+    signal(SIGSEGV, SIG_DFL);
+#endif
+}
+
 
 
 /* The signal handler of time out process */
 void __accmut__handler(int sig){
-    // fprintf(stderr, "%s", MUTSTXT[MUTATION_ID]);
-    // fprintf(stderr, "%d\n", MUTATION_ID);	// TODO::stdout or stderr
-    // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
-    exit(0);
+	#if 0
+	int fd = 2;
+
+	char msg[128] = {0};
+
+	__accmut__strcat(msg, "TIMEOUT: ");
+	__accmut__strcat(msg, __accmut__itoa(TEST_ID, 10));
+	__accmut__strcat(msg, "\t");
+
+	__accmut__strcat(msg, __accmut__itoa(MUTATION_ID, 10));
+	__accmut__strcat(msg, "\n");
+
+	write(fd, msg, __accmut__strlen(msg));
+	#endif
+
+    _exit(0);
 }
 
 void __accmut__sepcific_timer(){
 	char path[128] = {0};
-	sprintf(path, "%s%s%d", getenv("HOME"), "/tmp/accmut/oritime/", TEST_ID);
+	sprintf(path, "%s%s%s/%d", getenv("HOME"), "/tmp/accmut/oritime/", PROJECT, TEST_ID);
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
 		fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
@@ -156,8 +206,12 @@ void __accmut__sepcific_timer(){
 	fscanf(fp, "%d", &VALUE_SEC);
 	fscanf(fp, "%d", &VALUE_USEC);
 	fclose(fp);
-	// fprintf(stderr, " ~~~~~ %ld %ld\n", VALUE_SEC, VALUE_USEC);
-	// exit(0);
+
+    tick.it_value.tv_sec = VALUE_SEC;  // sec
+    tick.it_value.tv_usec = VALUE_USEC; // u sec.
+    tick.it_interval.tv_sec = INTTERVAL_SEC;
+    tick.it_interval.tv_usec =  INTTERVAL_USEC;
+
 }
 
 
@@ -271,7 +325,7 @@ void __accmut__load_all_muts(){
 	}
 	MUT_NUM = id - 1;
 
-	#if 1
+	#if 0
 	fprintf(stderr, "\n----------------- DUMP ALL MUTS ------------------\n");
 	fprintf(stderr, "TOTAL MUTS NUM : %d\n", MUT_NUM);
 	int i;
@@ -303,11 +357,6 @@ void __accmut__load_all_muts(){
  
 #if ACCMUT_STATIC_ANALYSIS_EVAL
 	#include<accmut/accmut_sma_eval.h>
-#endif
-
-
-#if ACCMUT_STATIC_ANALYSIS_FORK_INLINE
-	#include<accmut/accmut_sma_fork.h>
 #endif
 
 

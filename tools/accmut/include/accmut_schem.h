@@ -20,11 +20,11 @@
 /******************************************************/
 
 
-int totalfork = 0;
+int TOTALFORK = 0;
 
 void __accmut__mainfork(int id){
 		
-	if(MUTATION_ID == 0 && MUTS_ON[id]){
+	if(MUTATION_ID == 0 && (MUTS_ON[id] == 1) ){
 	
 		//fprintf(stderr, "FORK MUT: %d\n", id);
 		pid_t pid = fork();
@@ -33,10 +33,10 @@ void __accmut__mainfork(int id){
 			ERRMSG("fork ERR ");
 			exit(0);
 		}else if(pid == 0){//child process
+
 			MUTATION_ID = id;
 			
-			//TODO : set_out
-			//__accmut__setout(id);
+			//fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 			
 			int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
 			
@@ -44,8 +44,9 @@ void __accmut__mainfork(int id){
 				ERRMSG("setitimer ERR ");
 				exit(0);
 			}
+
 		}else{//father process	
-			totalfork++;
+			TOTALFORK++;
 			int pr = waitpid(pid, NULL, 0);
 
 			if(pr < 0){
@@ -66,12 +67,9 @@ void __accmut__init(){
 
 	__accmut__sepcific_timer();
 
-    tick.it_value.tv_sec = VALUE_SEC;  // sec
-    tick.it_value.tv_usec = VALUE_USEC; // u sec.
-    tick.it_interval.tv_sec = INTTERVAL_SEC;
-    tick.it_interval.tv_usec =  INTTERVAL_USEC;
-
     signal(SIGPROF, __accmut__handler);
+
+    signal(SIGSEGV, __accmut__SIGSEGV__handler); 
     
 	if(TEST_ID < 0){
 		ERRMSG("TEST_ID NOT INIT");
@@ -84,12 +82,13 @@ void __accmut__init(){
 	MUTS_ON = (int *) malloc( (sizeof(int)) * (MUT_NUM + 1) );
 	
 	int i;
-	for(i = 0; i < MUT_NUM + 1; i++){
-		*(MUTS_ON + i) = 1;
-	}
 
 
 #if ACCMUT_STATIC_ANALYSIS_FORK_CALL
+	for(i = 1; i < MUT_NUM + 1; i++){
+		*(MUTS_ON + i) = 0;
+	}
+
 	char path[128];
 	sprintf(path, "%s%s%s/t%d", getenv("HOME"), "/tmp/accmut/input/", PROJECT, TEST_ID);
 		
@@ -100,25 +99,26 @@ void __accmut__init(){
 		exit(0);
 	}
 	int curmut, on_id;
-	int killed = 0;
 	while(fscanf(fp,"%d:%d", &curmut, &on_id) != EOF){
-			if(curmut != on_id){
+			if(on_id == -1 || curmut == on_id){
 				//fprintf(stderr,"CURMUT: %d, ON_ID: %d\n", curmut, on_id);
-				*(MUTS_ON + curmut) = 0;
-				killed++;
+				*(MUTS_ON + curmut) = 1;
 			}				                	            
     }
     fclose(fp);
+#elif ACCMUT_MUTATION_SCHEMATA
+	for(i = 1; i < MUT_NUM + 1; i++){
+		*(MUTS_ON + i) = 1;
+	}
 #endif
-
 
    	for(i = 1; i < MUT_NUM + 1; i++){
 		__accmut__mainfork(i);
 	}
 	
-	/*if(MUTATION_ID == 0){
-		fprintf(stderr, "%d\n",	totalfork);
-	}*/
+	// if(MUTATION_ID == 0){
+	// 	fprintf(stderr, "TOTALFORK : %d\n",	TOTALFORK);
+	// }
 }
 
 
@@ -506,6 +506,9 @@ long __accmut__stdcall_i64(){
 }
 
 void __accmut__stdcall_void(){/*do nothing*/}
+
+//TODO::
+//char *__accmut__stdcall_pt(){return 0;}
 
 
 int __accmut__process_i32_arith(int from, int to, int left, int right){

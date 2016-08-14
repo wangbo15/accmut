@@ -27,13 +27,14 @@
 using namespace llvm;
 using namespace std;
 
+#define ERRMSG(msg) llvm::errs()<<msg<<" @ "<<__FILE__<<"->"<<__FUNCTION__<<"():"<<__LINE__<<"\n"
+		
+
 DMAInstrumenter::DMAInstrumenter(Module *M) : FunctionPass(ID) {
 	this->TheModule = M;
 	//getAllMutations(); 
 	MutUtil::getAllMutations();
 }
-
-int getTypeMacro(Type *t);
 
 static void test(Function &F){
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
@@ -179,7 +180,7 @@ static void test(Function &F){
 				else if(st->getValueOperand()->getType()->isIntegerTy(64)){
 					prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
 				}else{
-					llvm::errs()<<"ERR STORE TYPE @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+					ERRMSG("ERR STORE TYPE");
 					exit(0);
 				}
 				
@@ -201,7 +202,7 @@ static void test(Function &F){
 				}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){
 					params.push_back(alloca);
 				}else{
-					llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<" : "<<__LINE__<<"\n";
+					ERRMSG("NOT A POINTER");
 					exit(0);
 				}
 
@@ -273,7 +274,7 @@ bool DMAInstrumenter::runOnFunction(Function & F){
 #define INT_TP 2
 #define LONG_TP 3
 
-int getTypeMacro(Type *t){
+static int getTypeMacro(Type *t){
 	int res = -1;
 	if(t->isIntegerTy()){
 		unsigned width = t->getIntegerBitWidth();
@@ -291,12 +292,56 @@ int getTypeMacro(Type *t){
 				res = LONG_TP;
 				break;
 			default:
-				llvm::errs()<<"OMMITNG PARAM TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<" : ";
+				ERRMSG("OMMITNG PARAM TYPE");
 				llvm::errs()<<*t<<'\n';
 				//exit(0);
 		}
 	}	
 	return res;
+}
+
+static bool isHandledCoveInst(Instruction *inst){
+	return inst->getOpcode() == Instruction::Trunc 
+		|| inst->getOpcode() == Instruction::ZExt 
+		|| inst->getOpcode() == Instruction::SExt 
+		|| inst->getOpcode() == Instruction::BitCast ;
+	// TODO:: PtrToInt, IntToPtr, AddrSpaceCast and float related Inst are not handled
+}
+
+static bool pushPreparecallParam(std::vector<Value*>& params, int index, Value *OI, Module *TheModule){
+	Type* OIType = (dyn_cast<Value>(&*OI))->getType();
+	int tp = getTypeMacro(OIType);
+	if(tp < 0){
+		return false;
+	}
+	
+	std::stringstream ss;
+	//push type
+	ss.str("");
+	short tp_and_idx = ((unsigned char)tp)<<8;
+	tp_and_idx = tp_and_idx | index;
+	ss<<tp_and_idx;
+	ConstantInt* c_t_a_i = ConstantInt::get(TheModule->getContext(), 
+		APInt(16, StringRef(ss.str()), 10)); 
+	params.push_back(c_t_a_i);
+
+	//now push the pointer of idx'th param
+	// TODO:: for array ! 			
+	if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
+		params.push_back(ld->getPointerOperand());
+	}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){// a param of the F, fetch it by alloca
+		params.push_back(alloca);
+	}else if(GetElementPtrInst *ge = dyn_cast<GetElementPtrInst>(&*OI)){
+		// TODO: test
+		params.push_back(ge);
+	}else{
+		// TODO:: move to errmsg
+		ERRMSG("CAN NOT GET A POINTER");
+		Value *v = dyn_cast<Value>(&*OI);
+		v->dump();				
+		exit(0);					
+	}
+	return true;
 }
 
 void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
@@ -330,7 +375,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		mut_to = tmp.back()->id;
 
 		if(tmp.size() >= MAX_MUT_NUM_PER_LOCATION){
-			llvm::errs()<<"TOO MANY MUTS@ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+			ERRMSG("TOO MANY MUTS ");
 			llvm::errs()<<"CUR_INST: "<<tmp.front()->index<<"\t(FROM: "
 				<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
 			exit(0);
@@ -351,7 +396,6 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				}
 			}
 
-			
 			Function* precallfunc = TheModule->getFunction("__accmut__prepare_call");
 			std::vector<Value*> params;
 			std::stringstream ss;
@@ -368,32 +412,41 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			int index = 0;
 			int record_num = 0;
 			//get signature info
-			for (auto OI = cur_it->op_begin(), OE = cur_it->op_end(); OI != OE; ++OI, ++index){
-				Type* OIType = (dyn_cast<Value>(&*OI))->getType();
-				int tp = getTypeMacro(OIType);
-				if(tp < 0){
-					continue;
-				}
-				//push type
-				ss.str("");
-				short tp_and_idx = ((unsigned char)tp)<<8;
-				tp_and_idx = tp_and_idx | index;
-				ss<<tp_and_idx;
-				ConstantInt* ctai = ConstantInt::get(TheModule->getContext(), 
-					APInt(16, StringRef(ss.str()), 10)); 
-				params.push_back(ctai);
-				//now push the pointer of idx'th param
-
-				// TODO:: for array ! 
-				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
-					params.push_back(ld->getPointerOperand());
-				}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){// a param of the F, fetch it by alloca
-					params.push_back(alloca);
+			for (auto OI = cur_it->op_begin(), OE = cur_it->op_end() - 1; OI != OE; ++OI, ++index){
+				Instruction* para_inst = dyn_cast<Instruction>(&*OI);
+				if(para_inst && isHandledCoveInst(para_inst)){
+					Instruction* op_of_cov = dyn_cast<Instruction>(para_inst->getOperand(0));
+						if(dyn_cast<LoadInst>(&*op_of_cov) || dyn_cast<AllocaInst>(&*op_of_cov)){
+							Value *v = dyn_cast<Value>(op_of_cov);
+							bool succ = pushPreparecallParam(params, index, v, TheModule);
+							if(succ){
+								record_num++;
+							}
+							else{
+								ERRMSG("WARNNING : PUSH PARAM FAILURE ");
+								v->dump();
+							}
+						}else{
+							// TODO:: errmsg
+							ERRMSG("CAN NOT GET A POINTER OF THE COVERSION ");
+							cur_it->dump();
+							Value *v = dyn_cast<Value>(&*OI);
+							v->dump();
+							exit(0);
+						}
 				}else{
-					llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
-					exit(0);
-				}
-				record_num++;
+					Value *v = dyn_cast<Value>(&*OI);
+					bool succ = pushPreparecallParam(params, index, v, TheModule);
+					if(succ){
+						record_num++;
+					}
+					else{
+						ERRMSG("WARNNING : PUSH PARAM FAILURE ");
+						v->dump();
+					}
+				}				
+				
+				
 			}
 			//insert num of param-records
 			ss.str("");
@@ -431,14 +484,38 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){
 					ld->removeFromParent();
 					label_if_then->getInstList().push_back(ld);
-				}else if(Constant *con = dyn_cast<Constant>(&*OI)){// TODO:: test
+				}else if(Constant *con = dyn_cast<Constant>(&*OI)){
+					// TODO::  test
 					continue;
+				}else if(GetElementPtrInst *ge = dyn_cast<GetElementPtrInst>(&*OI)){
+					// TODO: test
+					ge->removeFromParent();
+					label_if_then->getInstList().push_back(ge);
 				}else{
-					llvm::errs()<<"NOT A LoadInst @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
-					cur_it->dump();
-					Value *v = dyn_cast<Value>(&*OI);
-					v->dump();
-					exit(0);
+					// TODO:: check
+					// TODO:: instrumented_insts !!!
+					Instruction *coversion = dyn_cast<Instruction>(&*OI);
+					if(isHandledCoveInst(coversion)){
+						Instruction* op_of_cov = dyn_cast<Instruction>(coversion->getOperand(0));
+						if(dyn_cast<LoadInst>(&*op_of_cov) || dyn_cast<AllocaInst>(&*op_of_cov)){
+							op_of_cov->removeFromParent();
+							label_if_then->getInstList().push_back(op_of_cov);
+							coversion->removeFromParent();
+							label_if_then->getInstList().push_back(coversion);
+						}else{
+							ERRMSG("CAN NOT GET A POINTER ");
+							cur_it->dump();
+							Value *v = dyn_cast<Value>(&*OI);
+							v->dump();					
+							exit(0);
+						}
+					}else{
+						ERRMSG("CAN NOT GET A POINTER ");
+						cur_it->dump();
+						Value *v = dyn_cast<Value>(&*OI);
+						v->dump();					
+						exit(0);
+					}						
 				}
 			}
 			label_if_then->getInstList().push_back(oricall);
@@ -453,9 +530,11 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			}else if(oricall->getType()->isVoidTy()){
 				std_handle = TheModule->getFunction("__accmut__stdcall_void");
 			}else{
-				llvm::errs()<<"ERR CALL TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				ERRMSG("ERR CALL TYPE ");
+				oricall->dump();
+				oricall->getType()->dump();
 				exit(0);
-			}
+			}//}else if(oricall->getType()->isPointerTy()){
 			
 			CallInst*  stdcall = CallInst::Create(std_handle, "", label_if_else);
 			stdcall->setCallingConv(CallingConv::C);
@@ -496,7 +575,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			else if(st->getValueOperand()->getType()->isIntegerTy(64)){
 				prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
 			}else{
-				llvm::errs()<<"ERR STORE TYPE @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				ERRMSG("ERR STORE TYPE ");
 				exit(0);
 			}
 			
@@ -523,7 +602,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			}else if(Constant *con = dyn_cast<Constant>(&*addr)){
 				params.push_back(con);
 			}else{
-				llvm::errs()<<"NOT A POINTER @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+				ERRMSG("NOT A POINTER ");
 				cur_it->dump();
 				Value *v = dyn_cast<Value>(&*addr);
 				v->dump();
@@ -574,7 +653,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				}else if(ori_ty->isIntegerTy(64)){
 					f_process = TheModule->getFunction("__accmut__process_i64_arith");
 				}else{
-					llvm::errs()<<"ArithInst TYPE ERROR @ "<<__FUNCTION__<<"() : "<<__LINE__<<"\n";
+					ERRMSG("ArithInst TYPE ERROR ");
 					cur_it->dump();
 					llvm::errs()<<*ori_ty<<"\n";
 					// TODO:: handle i1, i8, i64 ... type
@@ -606,7 +685,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				}else if(cur_it->getOperand(0)->getType()->isIntegerTy(64)){
 					f_process = TheModule->getFunction("__accmut__process_i64_cmp");
 				}else{
-					llvm::errs()<<"TYPE ERROR @ instrument() ICmpInst\n";			
+					ERRMSG("ICMP TYPE ERROR ");	
 					exit(0);
 				}
 				

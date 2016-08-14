@@ -127,18 +127,18 @@ long __accmut__fork__eqclass(int from, int to) {
 
          if(pid == 0) {
 
-             int r = setitimer(ITIMER_PROF, &tick, NULL);
+            int r = setitimer(ITIMER_PROF, &tick, NULL);
 
-             __accmut__filter__mutants(from, to, i);
+            __accmut__filter__mutants(from, to, i);
 
             if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ | PROT_WRITE)) {
                 perror("mprotect ERR : PROT_READ | PROT_WRITE");
                 exit(errno);
             }
 
-             MUTATION_ID = eqclass[i].mut_id[0];
+            MUTATION_ID = eqclass[i].mut_id[0];
 
-             // fprintf(stderr, "CHILD-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
+            fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 
             if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
                 perror("mprotect ERR : PROT_READ");
@@ -147,7 +147,7 @@ long __accmut__fork__eqclass(int from, int to) {
 
              return eqclass[i].value;
          } else {
-             // fflush(stdout);
+
              waitpid(pid, NULL, 0);
 
             // fprintf(stderr, "FATHER-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
@@ -179,12 +179,6 @@ long __accmut__fork__eqclass(int from, int to) {
     return result;
 }// end __accmut__fork__eqclass
 
-void __accmut__SIGSEGV__handler(){
-    fprintf(stderr, "SIGSEGV !!! TID: %d, MID: %d , PID: %d\t\n", TEST_ID, MUTATION_ID, getpid());
-    // signal(SIGSEGV, SIG_DFL);
-    // exit(1);
-    kill(getpid(), SIGKILL);
-}
 
 /** End Added **/
 
@@ -195,15 +189,10 @@ void __accmut__init(){
     atexit(__accmut__exit_time);
 
     __accmut__sepcific_timer();
-
-    tick.it_value.tv_sec = VALUE_SEC;  // sec
-    tick.it_value.tv_usec = VALUE_USEC; // u sec.
-    tick.it_interval.tv_sec = INTTERVAL_SEC;
-    tick.it_interval.tv_usec =  INTTERVAL_USEC;
     
     signal(SIGPROF, __accmut__handler); 
 
-    //signal(SIGSEGV, __accmut__SIGSEGV__handler);
+    signal(SIGSEGV, __accmut__SIGSEGV__handler);
 
     if(TEST_ID < 0){
         ERRMSG("TEST_ID NOT INIT");

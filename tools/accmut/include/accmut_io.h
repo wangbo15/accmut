@@ -11,6 +11,9 @@
 #include <fcntl.h>
 
 /*************************************************/
+
+#define ACCMUT_IO_DEBUG 0
+
 //INPUT BUF
 #define ACCMUT_MAX_FILENO (16)
 #define MAX_IN_BUF_SIZE (1<<22)
@@ -52,7 +55,7 @@ typedef struct _ACCMUT_FILE{
 
 
 #define DEF_STDFILE(NAME, FD, BUF, MAXSIZE, FLAGS) \
-	ACCMUT_FILE NAME = {FLAGS, FD, BUF, (BUF + MAXSIZE), BUF, BUF, 0};
+	ACCMUT_FILE NAME = {FLAGS, FD, BUF, (BUF + MAXSIZE), BUF, BUF, 0}
 
 DEF_STDFILE(stdfile_0, 0, NULL, 0, 0);	//unimplemented stdin
 DEF_STDFILE(stdfile_1, 1, STDOUT_BUFF, MAX_STDOUT_BUF_SIZE, O_WRONLY);
@@ -97,7 +100,9 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 	int _fd = open(path, omode | oflags, oprot);
 
 	if(_fd < 0){
-		fprintf(stdout, "OPEN ERROR, PATH: \"%s\", MODE: %d  @__accmut__fopen. TID: %d , MUT: %d\n", path, omode, TEST_ID, MUTATION_ID);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stdout, "OPEN ERROR, PATH: \"%s\", MODE: %d  @__accmut__fopen. TID: %d , MUT: %d\n", path, omode, TEST_ID, MUTATION_ID);
+		#endif
 		return NULL;
 	}
 	
@@ -113,7 +118,9 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 			return NULL;
 		}
 		if(sb.st_size > MAX_IN_BUF_SIZE){
-			fprintf(stderr, "INPUT FILE : %s IS TOO BIG. TID: %d, MUT: %d\n", path, TEST_ID, MUTATION_ID);
+			#if ACCMUT_IO_DEBUG
+				fprintf(stderr, "INPUT FILE : %s IS TOO BIG. TID: %d, MUT: %d\n", path, TEST_ID, MUTATION_ID);
+			#endif
 			return NULL;
 		}
 		fp->flags = O_RDONLY;
@@ -234,7 +241,9 @@ char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
 		return NULL;
 		
 	if(fp->read_cur - fp->bufbase >= fp->fsize){
-		fprintf(stderr, "READ OVERFLOW @ __accmut__fgets, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "READ OVERFLOW @ __accmut__fgets, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#endif
 		return NULL;
 	}
 	
@@ -263,7 +272,9 @@ char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
 
 int __accmut__getc(ACCMUT_FILE *fp){
 	if(fp->read_cur - fp->bufbase >= fp->fsize){
-		fprintf(stderr, "READ OVERFLOW @ __accmut__getc, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "READ OVERFLOW @ __accmut__getc, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#endif
 		return NULL;
 	}
 
@@ -297,7 +308,9 @@ size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
 int __accmut__fputc(int c, ACCMUT_FILE *fp){
 
 	if(fp->write_cur >= fp->bufend){
-		fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputc, ID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputc, ID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#endif
 		//TODO: need something to fflush
 		return EOF;
 	}
@@ -314,7 +327,9 @@ int __accmut__fputs(const char* s, ACCMUT_FILE *fp){
 	int result = EOF;
 	size_t len = strlen(s);
 	if(fp->write_cur + len >= fp->bufend){
-		fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputs, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "OUTPUT OVERFLOW @ __accmut__fputs, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#endif
 	}else{
 		memcpy(fp->write_cur, s, len);
 		fp->write_cur += len;
@@ -328,7 +343,9 @@ int __accmut__puts(const char* s){
 	int result = EOF;
 	size_t len = strlen(s);
 	if( (accmut_stdout->write_cur + len + 1) >= accmut_stdout->bufend){
-		fprintf(stderr, "STDOUT OVERFLOW @ __accmut__puts, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "STDOUT OVERFLOW @ __accmut__puts, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#endif	
 	}else{
 		memcpy(accmut_stdout->write_cur, s, len);		
 		accmut_stdout->write_cur += len;
@@ -356,7 +373,9 @@ int __accmut__puts(const char* s){
 int __accmut__fprintf(ACCMUT_FILE *fp, const char *format, ...){
 
 	if(fp == NULL){
-		fprintf(stderr, "NULL ACCMUT FILE  !!! @__accmut__fprintf, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "NULL ACCMUT FILE  !!! @__accmut__fprintf, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#endif
 	}
 
 	int ret;
@@ -382,7 +401,9 @@ int __accmut__fprintf(ACCMUT_FILE *fp, const char *format, ...){
 	}
 
 	if((fp->write_cur - fp->bufbase) + ret  > max){
-		fprintf(stderr, "ACCMUT BUFFER OVERFLOW !  @__accmut__fprintf. TID:%d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "ACCMUT BUFFER OVERFLOW !  @__accmut__fprintf. TID:%d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#endif
 		return 0;
 	}
 
@@ -398,7 +419,9 @@ int __accmut__printf(const char *format, ...){
 	va_end(ap);
 
 	if((accmut_stdout->write_cur - accmut_stdout->bufbase) + ret  > MAX_STDOUT_BUF_SIZE){
-		fprintf(stderr, "ACCMUT STDOUT BUF OVERFLOW !  @__accmut__printf, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "ACCMUT STDOUT BUF OVERFLOW !  @__accmut__printf, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#endif
 		return 0;
 	}
 
@@ -409,7 +432,9 @@ int __accmut__printf(const char *format, ...){
 size_t __accmut__fwrite(const void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
 	int request = size*count;
 	if(fp->write_cur + request > fp->bufend){
-		fprintf(stderr, "ACCMUT WRITE OVERFLOW !  @__accmut__fwrite, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "ACCMUT WRITE OVERFLOW !  @__accmut__fwrite, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
+		#endif
 		return 0;
 	}
 	char *s = buf;
@@ -443,7 +468,7 @@ void __accmut__exit_check_output(){
 	// }
 }
 
-void __accmut__bufinit(){
+void __accmut__oracal_bufinit(){
 	char path[120];
 	sprintf(path, "%st%d", ORACLEDIR, TEST_ID);
 	int fd = open(path, O_RDONLY);

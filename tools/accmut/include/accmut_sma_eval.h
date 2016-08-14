@@ -303,7 +303,8 @@ static int __accmut__find_set(int k) {
 static void __accmut__output_set() {
     __accmut__init_set();
 
-    // int i , j;
+    int i , j;
+    
     // for(i = 1; i <= MUT_NUM; i++){
     //     int loci = ALLMUTS[i]->index;
 
