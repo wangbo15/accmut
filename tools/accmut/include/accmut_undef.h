@@ -23,6 +23,7 @@
 
 #undef fputc
 #undef putc
+#undef fputs
 #undef puts
 #undef fwrite
 #undef fprintf

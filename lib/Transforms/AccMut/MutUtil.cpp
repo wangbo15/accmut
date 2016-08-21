@@ -167,3 +167,24 @@ BasicBlock::iterator MutUtil::getLocation(Function &F, int instrumented_insts, i
 	return F.back().end();	
 }
 
+int MutUtil::getOperandPtrDimension(Value* v){// TODO: check for getElemPtr !
+	if(LoadInst *ld = dyn_cast<LoadInst>(v)){
+		Value *ptr_of_ld = ld->getPointerOperand();
+		if(dyn_cast<Constant>(ptr_of_ld) || dyn_cast<AllocaInst>(ptr_of_ld) || dyn_cast<GetElementPtrInst>(ptr_of_ld)){
+			return 1;
+		}
+
+		LoadInst * lev_2_ld = dyn_cast<LoadInst>(ptr_of_ld);
+		
+		if(lev_2_ld){
+			Value *ptr_of_lev_2_ld = lev_2_ld->getPointerOperand();
+			if(dyn_cast<Constant>(ptr_of_lev_2_ld) || dyn_cast<AllocaInst>(ptr_of_lev_2_ld) || dyn_cast<GetElementPtrInst>(ptr_of_ld)){
+				return 2;
+			}
+		}
+	}
+	//other type can not handle
+	return -1;
+}
+
+

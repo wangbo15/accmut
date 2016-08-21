@@ -3,7 +3,7 @@
 
 /********** unimplemented of stdio.h *****************/
 
-#define UNIMPL ****
+#define UNIMPL *UNIMPLEMENTED_STDIO_H*
 
 /*************** STDIO.H *******************/
 //Formatted Input/Output functions
@@ -11,8 +11,8 @@
 #define fscanf UNIMPL
 //#define printf UNIMPL
 #define scanf UNIMPL
-#define sprintf UNIMPL
-#define sscanf UNIMPL
+//#define sprintf UNIMPL
+//#define sscanf UNIMPL
 #define vfprintf UNIMPL
 #define vprintf UNIMPL
 #define vsprintf UNIMPL
@@ -33,7 +33,7 @@
 #define fgetc UNIMPL
 //#define fgets UNIMPL
 //#define fputc UNIMPL
-#define fputs UNIMPL
+//#define fputs UNIMPL
 //#define getc UNIMPL
 #define getchar UNIMPL
 #define gets UNIMPL
@@ -70,6 +70,12 @@
 //#ifdef USE_ACCMUT_IO
 
 /****** FILE DATA STRUCTURE ******/
+#undef FILE
+#undef stdin
+#undef stdout
+#undef stderr
+
+
 #define FILE ACCMUT_FILE
 #define stdin accmut_stdin
 #define stdout accmut_stdout
@@ -84,7 +90,7 @@
 #define freopen(a,b,c) __accmut__freopen(a,b,c)
 
 /****** POSIX FILE ******/
-#define unlink(a,b) __accmut__unlink(a,b)
+#define unlink(a) __accmut__unlink(a)
 
 /****** INPUT ******/
 #define fgets(a,b,c) __accmut__fgets(a,b,c)
@@ -95,6 +101,7 @@
 #define fputc(a,b) __accmut__fputc(a,b)
 #define putc(a,b) __accmut__putc(a,b)
 #define puts(a) __accmut__puts(a)
+#define fputs(a,b) __accmut__fputs(a,b)
 #define fwrite(a,b,c,d) __accmut__fwrite(a,b,c,d)
 #define fprintf(...) __accmut__fprintf(__VA_ARGS__)
 #define printf(...) __accmut__printf(__VA_ARGS__)

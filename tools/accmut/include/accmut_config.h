@@ -31,12 +31,12 @@
 #define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 //for DMA FORK
-#define MAXMUTNUM 32768
+#define MAXMUTNUM 65536
 
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="printtokens";
+const char PROJECT[]="flex";
 
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -104,12 +104,14 @@ void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
 
+#if 1
 	if(MUTATION_ID != 0){
 
 		//__accmut__filedump(accmut_stdout);
 
 		return;
 	}
+#endif 
 
 	gettimeofday(&tv_end, NULL);
 
@@ -147,9 +149,14 @@ void __accmut__exit_time(){
 	//__accmut__filedump(accmut_stdout);
 }
 
+#define ACCMUT_MUTE 0
+
 void __accmut__SIGSEGV__handler(){
-	
-	int fd = 2;
+
+#if ACCMUT_MUTE
+	char *stderrpath = "/dev/stderr";
+
+	int fd = open(stderrpath, O_WRONLY);
 
 	char msg[128] = {0};
 
@@ -161,6 +168,7 @@ void __accmut__SIGSEGV__handler(){
 	__accmut__strcat(msg, "\n");
 
 	write(fd, msg, __accmut__strlen(msg));
+#endif
 
 #if 1
 	_exit(1);
@@ -170,7 +178,31 @@ void __accmut__SIGSEGV__handler(){
 #endif
 }
 
+void __accmut__SIGABRT__handler(){
 
+#if ACCMUT_MUTE
+	char *stderrpath = "/dev/stderr";
+
+	int fd = open(stderrpath, O_WRONLY);
+
+	char msg[128] = {0};
+
+	__accmut__strcat(msg, "SIGABRT: ");
+	__accmut__strcat(msg, __accmut__itoa(TEST_ID, 10));
+	__accmut__strcat(msg, "\t");
+
+	__accmut__strcat(msg, __accmut__itoa(MUTATION_ID, 10));
+	__accmut__strcat(msg, "\n");
+
+	write(fd, msg, __accmut__strlen(msg));
+#endif
+
+#if 1
+	kill(getpid(), SIGKILL);
+#else
+    signal(SIGABRT, SIG_DFL);
+#endif
+}
 
 /* The signal handler of time out process */
 void __accmut__handler(int sig){
@@ -189,7 +221,21 @@ void __accmut__handler(int sig){
 	write(fd, msg, __accmut__strlen(msg));
 	#endif
 
-    _exit(0);
+#if 1
+    _exit(1);
+#else
+    exit(1);
+#endif
+    
+}
+
+void __accmut__set_sig_handlers(){
+
+	signal(SIGPROF, __accmut__handler); 
+
+    signal(SIGSEGV, __accmut__SIGSEGV__handler);
+
+    signal(SIGABRT, __accmut__SIGABRT__handler);
 }
 
 void __accmut__sepcific_timer(){

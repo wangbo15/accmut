@@ -376,6 +376,7 @@ int __accmut__fprintf(ACCMUT_FILE *fp, const char *format, ...){
 		#if ACCMUT_IO_DEBUG
 			fprintf(stderr, "NULL ACCMUT FILE  !!! @__accmut__fprintf, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
 		#endif
+		return 0;
 	}
 
 	int ret;
@@ -543,7 +544,9 @@ void __accmut__filedump(ACCMUT_FILE *fp){
 	for(i = 0; i < sz; i++){
 		fprintf(stderr, "%c", *(fp->bufbase + i) );
 	}
-	fprintf(stderr, "\n************ END OF ACCMUT_FILE ***************\n\n");
+	
+	fprintf(stderr, "\n**** END **** TID:%d  MID:%d  FD:%d ***************\n\n", \
+		TEST_ID, MUTATION_ID, fp->fd);
 }
 
 

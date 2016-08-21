@@ -138,14 +138,14 @@ long __accmut__fork__eqclass(int from, int to) {
 
             MUTATION_ID = eqclass[i].mut_id[0];
 
-            fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
-
             if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
                 perror("mprotect ERR : PROT_READ");
                 exit(errno);
             }
 
-             return eqclass[i].value;
+            // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+
+            return eqclass[i].value;
          } else {
 
              waitpid(pid, NULL, 0);
@@ -190,9 +190,7 @@ void __accmut__init(){
 
     __accmut__sepcific_timer();
     
-    signal(SIGPROF, __accmut__handler); 
-
-    signal(SIGSEGV, __accmut__SIGSEGV__handler);
+    __accmut__set_sig_handlers();
 
     if(TEST_ID < 0){
         ERRMSG("TEST_ID NOT INIT");

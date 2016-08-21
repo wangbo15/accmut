@@ -20,45 +20,6 @@
 /******************************************************/
 
 
-int TOTALFORK = 0;
-
-void __accmut__mainfork(int id){
-		
-	if(MUTATION_ID == 0 && (MUTS_ON[id] == 1) ){
-	
-		//fprintf(stderr, "FORK MUT: %d\n", id);
-		pid_t pid = fork();
-		
-		if(pid < 0){
-			ERRMSG("fork ERR ");
-			exit(0);
-		}else if(pid == 0){//child process
-
-			MUTATION_ID = id;
-			
-			//fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
-			
-			int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
-			
-			if(r < 0){
-				ERRMSG("setitimer ERR ");
-				exit(0);
-			}
-
-		}else{//father process	
-			TOTALFORK++;
-			int pr = waitpid(pid, NULL, 0);
-
-			if(pr < 0){
-				ERRMSG("waitpid ERR ");
-				exit(0);
-			}			
-		}
-	}
-
-}
-
-
 void __accmut__init(){
 	
     gettimeofday(&tv_begin, NULL);
@@ -67,9 +28,7 @@ void __accmut__init(){
 
 	__accmut__sepcific_timer();
 
-    signal(SIGPROF, __accmut__handler);
-
-    signal(SIGSEGV, __accmut__SIGSEGV__handler); 
+	__accmut__set_sig_handlers();
     
 	if(TEST_ID < 0){
 		ERRMSG("TEST_ID NOT INIT");
@@ -107,18 +66,58 @@ void __accmut__init(){
     }
     fclose(fp);
 #elif ACCMUT_MUTATION_SCHEMATA
-	for(i = 1; i < MUT_NUM + 1; i++){
+	for(i = 0; i < MUT_NUM + 1; i++){
 		*(MUTS_ON + i) = 1;
 	}
 #endif
 
+	static int TOTALFORK = 0;
+
    	for(i = 1; i < MUT_NUM + 1; i++){
-		__accmut__mainfork(i);
+
+		if(MUTATION_ID == 0 && (MUTS_ON[i] == 1) ){
+		
+			//fprintf(stderr, "FORK MUT: %d\n", i);
+			pid_t pid = fork();
+			
+			if(pid < 0){
+				ERRMSG("fork ERR ");
+				exit(0);
+			}else if(pid == 0){//child process
+
+				MUTATION_ID = i;
+				
+				//fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+				
+				int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
+				
+				if(r < 0){
+					ERRMSG("setitimer ERR ");
+					exit(0);
+				}
+
+				break;
+			}else{//father process	
+				TOTALFORK++;
+				int pr = waitpid(pid, NULL, 0);
+
+				if(pr < 0){
+					ERRMSG("waitpid ERR ");
+					exit(0);
+				}			
+			}
+		}
+
 	}
-	
-	// if(MUTATION_ID == 0){
-	// 	fprintf(stderr, "TOTALFORK : %d\n",	TOTALFORK);
-	// }
+
+	free(MUTS_ON);
+
+#if 1	
+	if(MUTATION_ID == 0){
+		fprintf(stderr, "TOTALFORK : %d\n",	TOTALFORK);
+	}
+#endif
+
 }
 
 

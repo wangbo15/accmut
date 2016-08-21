@@ -27,8 +27,9 @@
 using namespace llvm;
 using namespace std;
 
-#define ERRMSG(msg) llvm::errs()<<msg<<" @ "<<__FILE__<<"->"<<__FUNCTION__<<"():"<<__LINE__<<"\n"
+#define ERRMSG(msg) llvm::errs()<<(msg)<<" @ "<<__FILE__<<"->"<<__FUNCTION__<<"():"<<__LINE__<<"\n"
 		
+#define VALERRMSG(it,msg,cp) llvm::errs()<<"\tCUR_IT:\t"<<(*(it))<<"\n\t"<<(msg)<<":\t"<<(*(cp))<<"\n"
 
 DMAInstrumenter::DMAInstrumenter(Module *M) : FunctionPass(ID) {
 	this->TheModule = M;
@@ -323,22 +324,33 @@ static bool pushPreparecallParam(std::vector<Value*>& params, int index, Value *
 	ss<<tp_and_idx;
 	ConstantInt* c_t_a_i = ConstantInt::get(TheModule->getContext(), 
 		APInt(16, StringRef(ss.str()), 10)); 
-	params.push_back(c_t_a_i);
 
 	//now push the pointer of idx'th param
-	// TODO:: for array ! 			
 	if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){//is a local var
-		params.push_back(ld->getPointerOperand());
+		Value *ptr_of_ld = ld->getPointerOperand();
+		//if the pointer of loadInst dose not point to an integer
+		if(SequentialType *t = dyn_cast<SequentialType>(ptr_of_ld->getType())){
+			if(! t->getElementType()->isIntegerTy()){// TODO: for i32** 
+				ERRMSG("WARNNING ! Trying to push a none-i32* !! ");
+				return false;
+			}
+		}
+		params.push_back(c_t_a_i);
+		params.push_back(ptr_of_ld);
 	}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*OI)){// a param of the F, fetch it by alloca
+		params.push_back(c_t_a_i);
 		params.push_back(alloca);
 	}else if(GetElementPtrInst *ge = dyn_cast<GetElementPtrInst>(&*OI)){
 		// TODO: test
+		params.push_back(c_t_a_i);
 		params.push_back(ge);
-	}else{
-		// TODO:: move to errmsg
+	}
+	// TODO:: for Global Pointer ?!
+	else{
 		ERRMSG("CAN NOT GET A POINTER");
 		Value *v = dyn_cast<Value>(&*OI);
-		v->dump();				
+		llvm::errs()<<"\tCUR_OPREAND:\t";
+		v->dump();
 		exit(0);					
 	}
 	return true;
@@ -385,15 +397,29 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			<<mut_from<<"\tTO: "<<mut_to<<")\t"<<*cur_it<<"\n";
 		
 		if(dyn_cast<CallInst>(&*cur_it)){
-			//move all constant literal int to repalce to alloca
+			//move all constant literal and SSA value to repalce to alloca, e.g foo(a+5)->b = a+5;foo(b)
 			for (auto OI = cur_it->op_begin(), OE = cur_it->op_end(); OI != OE; ++OI){
 				if(ConstantInt* cons = dyn_cast<ConstantInt>(&*OI)){
-					AllocaInst *alloca = new AllocaInst(cons->getType(), "cons_alias", cur_it);
+					AllocaInst *alloca = new AllocaInst(cons->getType(), (cons->getName().str()+".alias"), cur_it);
 					StoreInst *str = new StoreInst(cons, alloca, cur_it);
-					LoadInst *ld = new LoadInst(alloca, "const_load", cur_it);
+					LoadInst *ld = new LoadInst(alloca, (cons->getName().str()+".ld"), cur_it);
 					*OI = (Value*) ld;
 					instrumented_insts += 3;//add 'alloca', 'store' and 'load'
 				}
+				else if(Instruction* oinst = dyn_cast<Instruction>(&*OI)){
+					if(oinst->isBinaryOp() || 
+						(oinst->getOpcode() == Instruction::Call) || 
+						isHandledCoveInst(oinst) ||
+						(oinst->getOpcode() == Instruction::PHI) ){
+						AllocaInst *alloca = new AllocaInst(oinst->getType(), (oinst->getName().str()+".ptr"), cur_it);
+						StoreInst *str = new StoreInst(oinst, alloca, cur_it);
+						LoadInst *ld = new LoadInst(alloca, (oinst->getName().str()+".ld"), cur_it);
+						*OI = (Value*) ld;
+						instrumented_insts += 3;
+						
+					}
+				}
+				
 			}
 
 			Function* precallfunc = TheModule->getFunction("__accmut__prepare_call");
@@ -411,43 +437,33 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 
 			int index = 0;
 			int record_num = 0;
+			std::vector<int> pushed_param_idx;
+			
 			//get signature info
 			for (auto OI = cur_it->op_begin(), OE = cur_it->op_end() - 1; OI != OE; ++OI, ++index){
-				Instruction* para_inst = dyn_cast<Instruction>(&*OI);
-				if(para_inst && isHandledCoveInst(para_inst)){
-					Instruction* op_of_cov = dyn_cast<Instruction>(para_inst->getOperand(0));
-						if(dyn_cast<LoadInst>(&*op_of_cov) || dyn_cast<AllocaInst>(&*op_of_cov)){
-							Value *v = dyn_cast<Value>(op_of_cov);
-							bool succ = pushPreparecallParam(params, index, v, TheModule);
-							if(succ){
-								record_num++;
-							}
-							else{
-								ERRMSG("WARNNING : PUSH PARAM FAILURE ");
-								v->dump();
-							}
-						}else{
-							// TODO:: errmsg
-							ERRMSG("CAN NOT GET A POINTER OF THE COVERSION ");
-							cur_it->dump();
-							Value *v = dyn_cast<Value>(&*OI);
-							v->dump();
-							exit(0);
-						}
-				}else{
-					Value *v = dyn_cast<Value>(&*OI);
-					bool succ = pushPreparecallParam(params, index, v, TheModule);
-					if(succ){
-						record_num++;
-					}
-					else{
-						ERRMSG("WARNNING : PUSH PARAM FAILURE ");
-						v->dump();
-					}
-				}				
-				
-				
+
+				Value *v = dyn_cast<Value>(&*OI);
+				bool succ = pushPreparecallParam(params, index, v, TheModule);
+
+				if(succ){					
+					pushed_param_idx.push_back(index);
+					record_num++;
+				}
+				else{
+					//ERRMSG("---- WARNNING : PUSH PARAM FAILURE ");
+					//VALERRMSG(cur_it,"CUR_OPRAND",v);
+				}
+
 			}
+
+			if(! pushed_param_idx.empty()){
+				llvm::errs()<<"---- PUSH PARAM : ";
+				for(auto it = pushed_param_idx.begin(), ie = pushed_param_idx.end(); it != ie; ++it){
+					llvm::errs()<<*it<<"'th\t";
+				}
+				llvm::errs()<<"\n";
+			}
+			
 			//insert num of param-records
 			ss.str("");
 			ss<<record_num;
@@ -463,16 +479,16 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			
 			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 			
-			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
+			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd.call");
 			
 			BasicBlock *cur_bb = cur_it->getParent();
 			
 			Instruction* oricall = cur_it->clone();
 			
-			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "if.end");
+			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "stdcall.if.end");
 			
-			BasicBlock* label_if_then = BasicBlock::Create(TheModule->getContext(), "if.then",cur_bb->getParent(), label_if_end);
-			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "if.else",cur_bb->getParent(), label_if_end);
+			BasicBlock* label_if_then = BasicBlock::Create(TheModule->getContext(), "stdcall.if.then",cur_bb->getParent(), label_if_end);
+			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "stdcall.if.else",cur_bb->getParent(), label_if_end);
 			
 			cur_bb->back().eraseFromParent();
 			
@@ -480,7 +496,14 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				
 			//label_if_then
 			//move the loadinsts of params into if_then_block
-			for (auto OI = oricall->op_begin(), OE = oricall->op_end() - 1; OI != OE; ++OI){
+			index = 0;
+			for (auto OI = oricall->op_begin(), OE = oricall->op_end() - 1; OI != OE; ++OI, ++index){
+
+				//only move pushed parameters
+				if(find(pushed_param_idx.begin(), pushed_param_idx.end(), index) == pushed_param_idx.end()){
+					continue;
+				}
+				
 				if(LoadInst *ld = dyn_cast<LoadInst>(&*OI)){
 					ld->removeFromParent();
 					label_if_then->getInstList().push_back(ld);
@@ -503,17 +526,15 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 							coversion->removeFromParent();
 							label_if_then->getInstList().push_back(coversion);
 						}else{
-							ERRMSG("CAN NOT GET A POINTER ");
-							cur_it->dump();
+							ERRMSG("CAN MOVE GET A POINTER INTO IF.THEN");
 							Value *v = dyn_cast<Value>(&*OI);
-							v->dump();					
+							VALERRMSG(cur_it,"CUR_OPRAND",v);
 							exit(0);
 						}
 					}else{
-						ERRMSG("CAN NOT GET A POINTER ");
-						cur_it->dump();
+						ERRMSG("CAN MOVE GET A POINTER INTO IF.THEN");
 						Value *v = dyn_cast<Value>(&*OI);
-						v->dump();					
+						VALERRMSG(cur_it,"CUR_OPRAND",v);
 						exit(0);
 					}						
 				}
@@ -549,7 +570,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				instrumented_insts += 6;
 			}
 			else{
-				PHINode* call_res = PHINode::Create(IntegerType::get(TheModule->getContext(), 32), 2, "call.phi");
+				PHINode* call_res = PHINode::Create(oricall->getType(), 2, "call.phi");
 				call_res->addIncoming(oricall, label_if_then);
 				call_res->addIncoming(stdcall, label_if_else);
 				ReplaceInstWithInst(cur_it, call_res);
@@ -559,6 +580,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 		}
 		
 		else if(StoreInst* st = dyn_cast<StoreInst>(&*cur_it)){
+			// TODO:: add or call inst?
 			if(ConstantInt* cons = dyn_cast<ConstantInt>(st->getValueOperand())){
 					AllocaInst *alloca = new AllocaInst(cons->getType(), "cons_alias", st);
 					StoreInst *str = new StoreInst(cons, alloca, st);
@@ -576,6 +598,7 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
 			}else{
 				ERRMSG("ERR STORE TYPE ");
+				VALERRMSG(cur_it, "CUR_TYPE", st->getValueOperand()->getType());
 				exit(0);
 			}
 			
@@ -596,11 +619,13 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			
 			auto addr = st->op_begin() + 1;// the pointer of the storeinst
 			if(LoadInst *ld = dyn_cast<LoadInst>(&*addr)){//is a local var
-				params.push_back(ld->getPointerOperand());
+				params.push_back(ld);
 			}else if(AllocaInst *alloca = dyn_cast<AllocaInst>(&*addr)){
 				params.push_back(alloca);
 			}else if(Constant *con = dyn_cast<Constant>(&*addr)){
 				params.push_back(con);
+			}else if(GetElementPtrInst *gete = dyn_cast<GetElementPtrInst>(&*addr)){
+				params.push_back(gete);
 			}else{
 				ERRMSG("NOT A POINTER ");
 				cur_it->dump();
@@ -616,11 +641,11 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 
 			ConstantInt* zero = ConstantInt::get(Type::getInt32Ty(TheModule->getContext()), 0);
 		
-			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd");
+			ICmpInst *hasstd = new ICmpInst(cur_it, ICmpInst::ICMP_EQ, pre, zero, "hasstd.st");
 		
 			BasicBlock *cur_bb = cur_it->getParent();
 						
-			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "if.end");
+			BasicBlock* label_if_end = cur_bb->splitBasicBlock(cur_it, "stdst.if.end");
 			
 			BasicBlock* label_if_else = BasicBlock::Create(TheModule->getContext(), "std.st",cur_bb->getParent(), label_if_end);
 			
