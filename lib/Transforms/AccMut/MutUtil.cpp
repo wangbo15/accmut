@@ -57,7 +57,7 @@ void MutUtil::getAllMutations(){
 	fin.close();
 	allMutsGeted = true;
 	
-	dumpAllMuts();
+	//dumpAllMuts();
 }
 
 Mutation *MutUtil::getMutation(string line, int id){

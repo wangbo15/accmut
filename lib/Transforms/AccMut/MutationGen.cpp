@@ -81,14 +81,13 @@ void MutationGen::genMutationFile(Function & F){
 	int index = 0;
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
 		BasicBlock *BB = FI;
+		
 		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, index++){
-
+			
 			unsigned opc = BI->getOpcode();
-
 			if( !((opc >= 14 && opc <= 31) || opc == 34 || opc == 52 || opc == 55) ){// omit alloca and getelementptr		
 				continue;
 			}
-
 			
 			switch(opc){
 				case Instruction::Add:
@@ -137,7 +136,15 @@ void MutationGen::genMutationFile(Function & F){
 				}			
 				case Instruction::Call:
 				{
-					StringRef name = cast<CallInst>(BI)->getCalledFunction()->getName();
+					CallInst* call = cast<CallInst>(BI);
+
+					// omit function-pointer
+					Value* callee = dyn_cast<Value>(&*(call->op_end() - 1));
+					if(callee->getType()->isPointerTy()){
+						continue;
+					}
+					
+					StringRef name = call->getCalledFunction()->getName();
 					if(name.startswith("llvm")){//omit llvm inside functions
 						continue;
 					}
@@ -146,7 +153,7 @@ void MutationGen::genMutationFile(Function & F){
 					if(! ( isSupportedType(BI->getType())|| BI->getType()->isVoidTy() ) ){
 						continue;
 					}
-					
+
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
