@@ -1,0 +1,74 @@
+//#ifndef ACCMUT_REDEFINE_H
+//#define ACCMUT_REDEFINE_H
+
+/********** unimplemented of stdio.h *****************/
+
+#define UNIMPL *UNIMPLEMENTED_STDIO_H*
+
+/*************** STDIO.H *******************/
+//Formatted Input/Output functions
+//#define fprintf UNIMPL
+#define fscanf UNIMPL
+//#define printf UNIMPL
+#define scanf UNIMPL
+//#define sprintf UNIMPL
+//#define sscanf UNIMPL
+#define vfprintf UNIMPL
+#define vprintf UNIMPL
+#define vsprintf UNIMPL
+
+//File Operation functions
+//#define fclose UNIMPL
+#define fflush UNIMPL
+//#define fopen UNIMPL
+//#define freopen UNIMPL
+#define remove UNIMPL
+#define rename UNIMPL
+#define setbuf UNIMPL
+#define setvbuf UNIMPL
+#define tmpfile UNIMPL
+#define tmpnam UNIMPL
+
+//Character Input/Output functions
+#define fgetc UNIMPL
+//#define fgets UNIMPL
+//#define fputc UNIMPL
+//#define fputs UNIMPL
+//#define getc UNIMPL
+#define getchar UNIMPL
+#define gets UNIMPL
+//#define putc UNIMPL
+#define putchar UNIMPL
+//#define puts UNIMPL
+#define ungetc UNIMPL
+
+
+//Block Input/Output functions
+#define fread UNIMPL
+//#define fwrite UNIMPL
+
+//File Positioning functions
+#define fgetpos UNIMPL
+#define fseek UNIMPL
+#define fsetpos UNIMPL
+#define ftell UNIMPL
+#define rewind UNIMPL
+
+//Error Handling functions
+#define clearerr UNIMPL
+//#define feof UNIMPL
+//#define ferror UNIMPL
+#define perror UNIMPL
+
+/*************** END OF STDIO.H *************/
+
+
+/*************** UNISTD.H *******************/
+//TODO::
+
+
+/*************** END OF UNISTD.H *************/
+
+
+
+

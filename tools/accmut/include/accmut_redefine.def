@@ -56,7 +56,7 @@
 
 //Error Handling functions
 #define clearerr UNIMPL
-#define feof UNIMPL
+//#define feof UNIMPL
 //#define ferror UNIMPL
 #define perror UNIMPL
 
@@ -82,6 +82,7 @@
 #define stderr accmut_stderr
 
 /****** FILE OPTIONS ******/
+#define feof(a) __accmut__feof(a)
 #define fopen(a,b) __accmut__fopen(a,b)
 #define fclose(a) __accmut__fclose(a)
 //#define fseek(a,b,c) __accmut__fseek(a,b,c)

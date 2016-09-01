@@ -97,6 +97,12 @@ void MutationGen::genMutationFile(Function & F){
 				case Instruction::SDiv:
 				case Instruction::URem:
 				case Instruction::SRem:{
+					
+					// TODO: add for i1, i8. Support i32 and i64 first
+					if(! (BI->getType()->isIntegerTy(32) || BI->getType()->isIntegerTy(64))){
+						continue;
+					}
+					
 					genLVR(BI, F.getName(), index);
 					genUOI(BI, F.getName(), index);
 					genROV(BI, F.getName(), index);
@@ -138,11 +144,14 @@ void MutationGen::genMutationFile(Function & F){
 				{
 					CallInst* call = cast<CallInst>(BI);
 
-					// omit function-pointer
-					Value* callee = dyn_cast<Value>(&*(call->op_end() - 1));
-					if(callee->getType()->isPointerTy()){
+					// TODO: omit function-pointer
+					if(call->getCalledFunction() == NULL){
 						continue;
 					}
+					/*Value* callee = dyn_cast<Value>(&*(call->op_end() - 1));
+					if(callee->getType()->isPointerTy()){
+						continue;
+					}*/
 					
 					StringRef name = call->getCalledFunction()->getName();
 					if(name.startswith("llvm")){//omit llvm inside functions

@@ -127,7 +127,13 @@ long __accmut__fork__eqclass(int from, int to) {
 
          if(pid == 0) {
 
-            int r = setitimer(ITIMER_PROF, &tick, NULL);
+            int r1 = setitimer(ITIMER_REAL, &ACCMUT_REAL_TICK, NULL); 
+            int r2 = setitimer(ITIMER_PROF, &ACCMUT_PROF_TICK, NULL); 
+
+            if(r1 < 0 || r2 < 0){
+                ERRMSG("setitimer ERR ");
+                exit(0);
+            }
 
             __accmut__filter__mutants(from, to, i);
 
@@ -143,7 +149,7 @@ long __accmut__fork__eqclass(int from, int to) {
                 exit(errno);
             }
 
-            // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+            fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 
             return eqclass[i].value;
          } else {
@@ -385,9 +391,9 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
             case ABV:
             {
                 if(m->op_0 == 0){
-                    mut_res = __accmut__cal_i64_arith(m->sop, abs(left), right);
+                    mut_res = __accmut__cal_i64_arith(m->sop, labs(left), right);
                 }else{
-                    mut_res = __accmut__cal_i64_arith(m->sop, left, abs(right) );
+                    mut_res = __accmut__cal_i64_arith(m->sop, left, labs(right) );
                 }
                 break;
             }       
@@ -602,9 +608,9 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
             case ABV:
             {
                 if(m->op_0 == 0){
-                    mut_res = __accmut__cal_i64_bool(s_pre, abs(left), right);
+                    mut_res = __accmut__cal_i64_bool(s_pre, labs(left), right);
                 }else{
-                    mut_res = __accmut__cal_i64_bool(s_pre, left, abs(right) );
+                    mut_res = __accmut__cal_i64_bool(s_pre, left, labs(right) );
                 }
                 break;
             }
@@ -964,7 +970,7 @@ int __accmut__apply_call_mut(Mutation* m, PrepareCallParam* params){
                 case LONG_TP:
                 {
                     long *ptr = (long *) params[idx].address;
-                    *ptr = abs(*ptr);
+                    *ptr = labs(*ptr);
                     break;
                 }
                 default:
@@ -1417,7 +1423,7 @@ int __accmut__apply_store_mut(Mutation*m , long tobestore, unsigned long addr, i
         }
         case ABV:
         {
-            tobestore = abs(tobestore);
+            tobestore = labs(tobestore);
             break;
         }
         default:

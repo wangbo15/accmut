@@ -4,6 +4,7 @@ release/
 
 ## ignore the build libs ##
 *.[oa]
+*.so
 
 ##
 tools/accmut/*.ll

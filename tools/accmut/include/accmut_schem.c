@@ -1,22 +1,31 @@
-#ifndef ACCMUT_SMA_SCHEM_H
-#define ACCMUT_SMA_SCHEM_H
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <math.h>
 #include <stdarg.h>
-
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/mman.h>
+#include <errno.h>
+#include <math.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 
-#include <accmut/accmut_arith_common.h>
+#include "accmut_process.h"
+#include "accmut_arith_common.h"
+#include "accmut_config.h"
+#include "accmut_io.h"
+#include "accmut_exitcode.h"
+
+extern struct itimerval ACCMUT_PROF_TICK;
+extern struct itimerval ACCMUT_REAL_TICK;
+
+extern struct timeval tv_begin, tv_end;
+
+//extern int MUTATION_ID;
+extern int TEST_ID;
+extern const char PROJECT[];
+
+extern Mutation* ALLMUTS[MAXMUTNUM + 1];
+extern int MUT_NUM;
+extern int *MUTS_ON;
+
+
+#define fprintf __real_fprintf
 /******************************************************/
 
 
@@ -29,10 +38,12 @@ void __accmut__init(){
 	__accmut__sepcific_timer();
 
 	__accmut__set_sig_handlers();
+	
+	__accmut__init_stdstream();
     
 	if(TEST_ID < 0){
 		ERRMSG("TEST_ID NOT INIT");
-		exit(0);
+		exit(ENV_ERR);
 	}
 
 	__accmut__load_all_muts();
@@ -55,7 +66,7 @@ void __accmut__init(){
 	
 	if(fp == 0){
 		ERRMSG("SMA FOEPN ERR");
-		exit(0);
+		exit(FOPEN_ERR);
 	}
 	int curmut, on_id;
 	while(fscanf(fp,"%d:%d", &curmut, &on_id) != EOF){
@@ -77,23 +88,36 @@ void __accmut__init(){
 
 		if(MUTATION_ID == 0 && (MUTS_ON[i] == 1) ){
 		
-			//fprintf(stderr, "FORK MUT: %d\n", i);
+			// fprintf(stderr, "FORK MUT: %d\n", i);
 			pid_t pid = fork();
 			
 			if(pid < 0){
 				ERRMSG("fork ERR ");
-				exit(0);
+				exit(ENV_ERR);
 			}else if(pid == 0){//child process
 
-				MUTATION_ID = i;
+
+	            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ | PROT_WRITE)) {
+	                perror("mprotect ERR : PROT_READ | PROT_WRITE");
+	                exit(errno);
+	            }
+
+	            MUTATION_ID = i;
+
+	            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
+	                perror("mprotect ERR : PROT_READ");
+	                exit(errno);
+	            }
 				
 				//fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 				
-				int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
+				int r1 = setitimer(ITIMER_REAL, &ACCMUT_REAL_TICK, NULL); 
 				
-				if(r < 0){
+				int r2 = setitimer(ITIMER_PROF, &ACCMUT_PROF_TICK, NULL); 
+
+				if(r1 < 0 || r2 < 0){
 					ERRMSG("setitimer ERR ");
-					exit(0);
+					exit(ENV_ERR);
 				}
 
 				break;
@@ -103,7 +127,7 @@ void __accmut__init(){
 
 				if(pr < 0){
 					ERRMSG("waitpid ERR ");
-					exit(0);
+					exit(ENV_ERR);
 				}			
 			}
 		}
@@ -119,7 +143,6 @@ void __accmut__init(){
 #endif
 
 }
-
 
 
 /*
@@ -189,7 +212,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				default:
 				{
 					ERRMSG("ERR LVR params[idx].type ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 			}//end switch(params[idx].type)
 			break;
@@ -251,7 +274,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				default:
 				{
 					ERRMSG("ERR UOI params[idx].type ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 			}//end switch(params[idx].type)
 			break;
@@ -302,7 +325,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						default:
 						{
 							ERRMSG("ERR ROV params[idx2].type ");
-							exit(0);
+							exit(MUT_TP_ERR);
 						}
 					}//end switch(params[idx2].type)
 					break;
@@ -347,7 +370,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						default:
 						{
 							ERRMSG("ERR ROV params[idx2].type ");
-							exit(0);
+							exit(MUT_TP_ERR);
 						}
 					}//end switch(params[idx2].type)
 					break;
@@ -392,7 +415,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						default:
 						{
 							ERRMSG("ERR ROV params[idx2].type ");
-							exit(0);
+							exit(MUT_TP_ERR);
 						}
 					}//end switch(params[idx2].type)
 					break;
@@ -437,7 +460,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 						default:
 						{
 							ERRMSG("ERR ROV params[idx2].type ");
-							exit(0);
+							exit(MUT_TP_ERR);
 						}
 					}//end switch(params[idx2].type)				
 					break;
@@ -445,7 +468,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				default:
 				{
 					ERRMSG("ERR ROV params[idx1].type ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 			}//end switch(params[idx1].type)
 			break;
@@ -476,13 +499,13 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 				case LONG_TP:
 				{
 					long *ptr = (long *) params[idx].address;
-					*ptr = abs(*ptr);
+					*ptr = labs(*ptr);
 					break;
 				}
 				default:
 				{
 					ERRMSG("ERR ABV params[idx].type ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 			}//end switch(params[idx].type)
 			break;
@@ -490,7 +513,7 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
 		default:
 		{
 			ERRMSG("m->type ERR ");
-			exit(0);
+			exit(MUT_TP_ERR);
 		}
 	}//end switch(m->type)
 	return 0;
@@ -544,7 +567,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 					u_left = 0 - left;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i32_arith(m->sop, u_left, right);
 			}else{
@@ -557,7 +580,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 					u_right = 0 - right;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i32_arith(m->sop, left, u_right);
 			}
@@ -587,7 +610,7 @@ int __accmut__process_i32_arith(int from, int to, int left, int right){
 		default:
 		{
 			ERRMSG("m->type ERR ");
-			exit(0);
+			exit(MUT_TP_ERR);
 		}
 	}//end switch
 	return mut_res;
@@ -627,7 +650,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 					u_left = 0 - left;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i64_arith(m->sop, u_left, right);
 			}else{
@@ -640,7 +663,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 					u_right = 0 - right;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i64_arith(m->sop, left, u_right);
 			}
@@ -654,9 +677,9 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 		case ABV:
 		{
 			if(m->op_0 == 0){
-				mut_res = __accmut__cal_i64_arith(m->sop, abs(left), right);
+				mut_res = __accmut__cal_i64_arith(m->sop, labs(left), right);
 			}else{
-				mut_res = __accmut__cal_i64_arith(m->sop, left, abs(right) );
+				mut_res = __accmut__cal_i64_arith(m->sop, left, labs(right) );
 			}
 			break;
 		}		
@@ -670,7 +693,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 		default:
 		{
 			ERRMSG("m->type ERR ");
-			exit(0);
+			exit(MUT_TP_ERR);
 		}
 	}//end switch
 	return mut_res;
@@ -711,7 +734,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 					u_left = 0 - left;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i32_bool(s_pre, u_left, right);
 			}else{
@@ -724,7 +747,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 					u_right = 0 - right;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i32_bool(s_pre, left, u_right);
 			}			
@@ -751,7 +774,7 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 		}
 		default:
 			ERRMSG("m->type ERR ");
-			exit(0);
+			exit(MUT_TP_ERR);
 	}//end switch
 	
 	return mut_res;
@@ -792,7 +815,7 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 					u_left = 0 - left;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i32_bool(s_pre, u_left, right);
 			}else{
@@ -805,7 +828,7 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 					u_right = 0 - right;
 				}else{
 					ERRMSG("UOI ERR ");
-					exit(0);
+					exit(MUT_TP_ERR);
 				}
 				mut_res = __accmut__cal_i64_bool(s_pre, left, u_right);
 			}			
@@ -819,9 +842,9 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 		case ABV:
 		{
 			if(m->op_0 == 0){
-				mut_res = __accmut__cal_i64_bool(s_pre, abs(left), right);
+				mut_res = __accmut__cal_i64_bool(s_pre, labs(left), right);
 			}else{
-				mut_res = __accmut__cal_i64_bool(s_pre, left, abs(right) );
+				mut_res = __accmut__cal_i64_bool(s_pre, left, labs(right) );
 			}
 			break;
 		}
@@ -832,7 +855,7 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
 		}
 		default:
 			ERRMSG("m->type ERR ");
-			exit(0);
+			exit(MUT_TP_ERR);
 	}//end switch
 
 	return mut_res;
@@ -877,7 +900,7 @@ int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
 		}
 		default:
 			ERRMSG("m->type ERR ");
-			exit(0);		
+			exit(MUT_TP_ERR);		
 	}//end switch(m->type)
 	*addr = tobestore;
 	return 0;
@@ -916,12 +939,12 @@ int __accmut__prepare_st_i64(int from, int to, long tobestore, long* addr){
 		}
 		case ABV:
 		{
-			tobestore = abs(tobestore);
+			tobestore = labs(tobestore);
 			break;
 		}
 		default:
 			ERRMSG("m->type ERR ");
-			exit(0);		
+			exit(MUT_TP_ERR);		
 	}//end switch(m->type)
 	*addr = tobestore;
 	return 0;
@@ -930,4 +953,4 @@ int __accmut__prepare_st_i64(int from, int to, long tobestore, long* addr){
 void __accmut__std_store(){/*donothing*/}
 
 
-#endif
+#undef fprintf

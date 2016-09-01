@@ -10,6 +10,7 @@
 #undef stderr
 #undef stdin
 
+#undef feof
 #undef fopen
 #undef fclose
 #undef ferror
