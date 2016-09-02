@@ -1,6 +1,9 @@
 #include "accmut_config.h"
-
 #include "accmut_exitcode.h"
+
+#if ACCMUT_STATIC_ANALYSIS_EVAL
+#include <math.h>
+#endif
 
 const char PROJECT[]="test";
 
@@ -255,7 +258,7 @@ void __accmut__load_all_muts(){
 	
 	#if ACCMUT_STATIC_ANALYSIS_EVAL
 	int idx;
-	int cur_loc = 0;
+	int cur_loc = 1;	//begin from 1, not 0
 	int pre_idx = -1;
 	char pre_func[64] = {0};
 	#endif
@@ -265,6 +268,13 @@ void __accmut__load_all_muts(){
 		#if ACCMUT_STATIC_ANALYSIS_EVAL
 			char func[64] = {0};
 			sscanf(buff, "%3s:%[^:]:%d:%s", type, func, &idx, tail);
+
+			int is_in_loop = 0;
+			if(idx < 0){
+				idx = 0 - idx;
+				is_in_loop = 1;
+			}
+
 			Mutation* m = (Mutation *)malloc(sizeof(Mutation));
 
 			if((strcmp(pre_func, func)) != 0 || idx != pre_idx){
@@ -272,7 +282,10 @@ void __accmut__load_all_muts(){
 			}
 			pre_idx = idx;
 			strcpy(pre_func, func);
-			m->location = cur_loc;
+			if(is_in_loop)
+				m->location = 0 - cur_loc;
+			else
+				m->location = cur_loc;
 		#else
 			sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 			Mutation* m = (Mutation *)malloc(sizeof(Mutation));	
@@ -335,10 +348,10 @@ void __accmut__load_all_muts(){
 			m->op_2 = op2;
 		}else if(!strcmp(type, "ABV")){
 			m->type = ABV;
-			int op, idx;
-			sscanf(tail, "%d:%d", &op, &idx);
+			int op, op_i;
+			sscanf(tail, "%d:%d", &op, &op_i);
 			m->sop = op;
-			m->op_0 = idx;
+			m->op_0 = op_i;
 		}else{
 			__real_fprintf(stderr, "ERROR MUT TYPE: %d:%s\n", id, buff);
 			exit(MUT_TP_ERR);

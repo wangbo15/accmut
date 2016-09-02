@@ -1041,7 +1041,16 @@ void __accmut__init(){
     __accmut__load_all_muts();
 
     int i;
+
     for(i = 1; i <= MUT_NUM; i++){
+        if(ALLMUTS[i]->location < 0){
+            UNSUPORTED[i] = 1;
+            ALLMUTS[i]->location = 0 - ALLMUTS[i]->location;
+        }
+    }
+
+    for(i = 1; i <= MUT_NUM; i++){
+
         if(ALLMUTS[i]->sop == STSOP || ALLMUTS[i]->sop == CALLSOP){
             if((ALLMUTS[i]->type == STD) || (ALLMUTS[i]->type == LVR)){
                 UNSUPORTED[i] = 1;

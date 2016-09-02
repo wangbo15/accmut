@@ -25,6 +25,13 @@
 #include <cstdlib>
 #include <ctime>
 
+#define NEED_LOOP_INFO 1
+
+#if NEED_LOOP_INFO
+#include "llvm/Analysis/LoopInfo.h"
+#endif
+
+
 using namespace llvm;
 using namespace std;
 
@@ -49,6 +56,7 @@ MutationGen::MutationGen(Module *M) : FunctionPass(ID) {
 
 static int muts_num = 0;
 
+static LoopInfo *LI;
 bool MutationGen::runOnFunction(Function &F) {
 
 	muts_num = 0;
@@ -61,6 +69,8 @@ bool MutationGen::runOnFunction(Function &F) {
 		return false;
 	}
 	llvm::errs()<<"\n\t GENEARTING MUTATION FOR : "<<TheModule->getName()<<" -> "<<F.getName()<<"() ";
+	
+	LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 
 	genMutationFile(F);
 
@@ -79,8 +89,13 @@ static bool isSupportedType(Type *t){
 
 void MutationGen::genMutationFile(Function & F){
 	int index = 0;
+	
 	for(Function::iterator FI = F.begin(); FI != F.end(); ++FI){
 		BasicBlock *BB = FI;
+
+		#if NEED_LOOP_INFO
+		bool isLoop = LI->getLoopFor(BB);
+		#endif
 		
 		for(BasicBlock::iterator BI = BB->begin(); BI != BB->end(); ++BI, index++){
 			
@@ -88,6 +103,15 @@ void MutationGen::genMutationFile(Function & F){
 			if( !((opc >= 14 && opc <= 31) || opc == 34 || opc == 52 || opc == 55) ){// omit alloca and getelementptr		
 				continue;
 			}
+
+			int idxtmp = index;
+
+			#if NEED_LOOP_INFO
+			if(isLoop){
+				assert(idxtmp != 0);
+				idxtmp = 0 - idxtmp;
+			}
+			#endif
 			
 			switch(opc){
 				case Instruction::Add:
@@ -103,11 +127,11 @@ void MutationGen::genMutationFile(Function & F){
 						continue;
 					}
 					
-					genLVR(BI, F.getName(), index);
-					genUOI(BI, F.getName(), index);
-					genROV(BI, F.getName(), index);
-					genABV(BI, F.getName(), index);					
-					genAOR(BI, F.getName(), index);
+					genLVR(BI, F.getName(), idxtmp);
+					genUOI(BI, F.getName(), idxtmp);
+					genROV(BI, F.getName(), idxtmp);
+					genABV(BI, F.getName(), idxtmp);					
+					genAOR(BI, F.getName(), idxtmp);
 					break;
 				}
 				case Instruction::ICmp:{
@@ -116,11 +140,11 @@ void MutationGen::genMutationFile(Function & F){
 						continue;
 					}
 
-					genLVR(BI, F.getName(), index);
-					genUOI(BI, F.getName(), index);	
-					genROV(BI, F.getName(), index);
-					genABV(BI, F.getName(), index);			
-					genROR(BI, F.getName(), index);
+					genLVR(BI, F.getName(), idxtmp);
+					genUOI(BI, F.getName(), idxtmp);	
+					genROV(BI, F.getName(), idxtmp);
+					genABV(BI, F.getName(), idxtmp);			
+					genROR(BI, F.getName(), idxtmp);
 					break;
 				}
 				case Instruction::Shl:
@@ -133,11 +157,11 @@ void MutationGen::genMutationFile(Function & F){
 					if(! (BI->getType()->isIntegerTy(32) || BI->getType()->isIntegerTy(64))){
 						continue;
 					}
-					genLVR(BI, F.getName(), index);
-					genUOI(BI, F.getName(), index);
-					genROV(BI, F.getName(), index);
-					genABV(BI, F.getName(), index);					
-					genLOR(BI, F.getName(), index);
+					genLVR(BI, F.getName(), idxtmp);
+					genUOI(BI, F.getName(), idxtmp);
+					genROV(BI, F.getName(), idxtmp);
+					genABV(BI, F.getName(), idxtmp);					
+					genLOR(BI, F.getName(), idxtmp);
 					break;
 				}			
 				case Instruction::Call:
@@ -163,11 +187,11 @@ void MutationGen::genMutationFile(Function & F){
 						continue;
 					}
 
-					genLVR(BI, F.getName(), index);
-					genUOI(BI, F.getName(), index);
-					genROV(BI, F.getName(), index);
-					genABV(BI, F.getName(), index);					
-					genSTDCall(BI, F.getName(), index);
+					genLVR(BI, F.getName(), idxtmp);
+					genUOI(BI, F.getName(), idxtmp);
+					genROV(BI, F.getName(), idxtmp);
+					genABV(BI, F.getName(), idxtmp);					
+					genSTDCall(BI, F.getName(), idxtmp);
 					break;
 				}
 				case Instruction::Store:{
@@ -189,10 +213,10 @@ void MutationGen::genMutationFile(Function & F){
 						continue;
 					}
 					
-					genLVR(BI, F.getName(), index);
-					genUOI(BI, F.getName(), index);
-					genABV(BI, F.getName(), index);	
-					genSTDStore(BI, F.getName(), index);
+					genLVR(BI, F.getName(), idxtmp);
+					genUOI(BI, F.getName(), idxtmp);
+					genABV(BI, F.getName(), idxtmp);	
+					genSTDStore(BI, F.getName(), idxtmp);
 					break;
 				}	
 				case Instruction::GetElementPtr:{
@@ -615,6 +639,11 @@ void MutationGen::genABV(Instruction *inst, StringRef fname, int index){
 /*------------------reserved begin-------------------*/
 void MutationGen::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
+
+#if NEED_LOOP_INFO
+  AU.addRequiredTransitive<LoopInfoWrapperPass>();
+#endif
+
 }
 
 char MutationGen::ID = 0;
