@@ -23,12 +23,12 @@
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 0
+#define ACCMUT_STATIC_ANALYSIS_EVAL 1
 
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -36,7 +36,7 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="flex";
+const char PROJECT[]="test";
 
 
 #if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -289,13 +289,37 @@ void __accmut__load_all_muts(){
 	char type[4];
 	char buff[MUTFILELINE];	
 	char tail[40];
+
+	#if ACCMUT_STATIC_ANALYSIS_EVAL
+	int idx;
+	int cur_loc = 1;	//begin from 1, not 0
+	int pre_idx = -1;
+	char pre_func[64] = {0};
+	#endif
+
 	while(fgets(buff, MUTFILELINE, fp)){
 
 		#if ACCMUT_STATIC_ANALYSIS_EVAL
-			int idx;
-			sscanf(buff, "%3s:%*[^:]:%d:%s", type, &idx, tail);
-			Mutation* m = (Mutation *)malloc(sizeof(Mutation));		
-			m->index = idx;
+			char func[64] = {0};
+			sscanf(buff, "%3s:%[^:]:%d:%s", type, func, &idx, tail);
+
+			int is_in_loop = 0;
+			if(idx < 0){
+				idx = 0 - idx;
+				is_in_loop = 1;
+			}
+
+			Mutation* m = (Mutation *)malloc(sizeof(Mutation));
+
+			if((strcmp(pre_func, func)) != 0 || idx != pre_idx){
+				cur_loc++;
+			}
+			pre_idx = idx;
+			strcpy(pre_func, func);
+			if(is_in_loop)
+				m->location = 0 - cur_loc;
+			else
+				m->location = cur_loc;
 		#else
 			sscanf(buff, "%3s:%*[^:]:%*[^:]:%s", type, tail);
 			Mutation* m = (Mutation *)malloc(sizeof(Mutation));	

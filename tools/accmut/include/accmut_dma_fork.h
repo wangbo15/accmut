@@ -152,6 +152,8 @@ long __accmut__fork__eqclass(int from, int to) {
 
             // fprintf(stderr, "FATHER-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
 
+             fprintf(stderr, "#\n");
+
             #if 0
 
             int nptrs, j;

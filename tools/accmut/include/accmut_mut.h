@@ -15,7 +15,8 @@ typedef struct Mutation{
 	MType type;
 
 #if ACCMUT_STATIC_ANALYSIS_EVAL	
-	int index;
+	//int index;
+	int location;
 #endif
 
 	//src operand, for all muts
