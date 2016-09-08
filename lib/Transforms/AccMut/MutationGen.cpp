@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#define NEED_LOOP_INFO 1
+#define NEED_LOOP_INFO 0
 
 #if NEED_LOOP_INFO
 #include "llvm/Analysis/LoopInfo.h"
@@ -56,7 +56,10 @@ MutationGen::MutationGen(Module *M) : FunctionPass(ID) {
 
 static int muts_num = 0;
 
+#if NEED_LOOP_INFO
 static LoopInfo *LI;
+#endif
+
 bool MutationGen::runOnFunction(Function &F) {
 
 	muts_num = 0;
@@ -69,8 +72,10 @@ bool MutationGen::runOnFunction(Function &F) {
 		return false;
 	}
 	llvm::errs()<<"\n\t GENEARTING MUTATION FOR : "<<TheModule->getName()<<" -> "<<F.getName()<<"() ";
-	
+
+	#if NEED_LOOP_INFO
 	LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+	#endif
 
 	genMutationFile(F);
 

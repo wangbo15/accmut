@@ -97,8 +97,6 @@ size_t __wrap_fwrite(const void *buf, size_t size, size_t count, FILE *fp);
 
 void __accmut__init_stdstream();
 
-void __accmut__filedump(ACCMUT_FILE *fp);
-
 void __accmut__oracledump();
 
 int __accmut__checkoutput();
@@ -111,7 +109,7 @@ void __accmut__setout(int id);
 
 void __accmut__oracledump();
 
-void __accmut__filedump(ACCMUT_FILE *fp);
+void __accmut__filedump(FILE *fp);
 
 
 #endif

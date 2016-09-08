@@ -5,7 +5,7 @@
 #include <math.h>
 #endif
 
-const char PROJECT[]="test";
+const char PROJECT[]="tcas";
 
 //#if ACCMUT_DYNAMIC_ANALYSIS_FORK
 	int HOLDER[1024] __attribute__((aligned(0x1000))) = {0};
@@ -44,10 +44,10 @@ void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
 
+	__accmut__filedump(stdout);
+
 #if 1
 	if(MUTATION_ID != 0){
-
-		//__accmut__filedump(accmut_stdout);
 
 		return;
 	}
@@ -133,6 +133,7 @@ static void __accmut__omitdump__handler(int sig){
 			__accmut__strcat(msg, "SIGFPE: ");
 			break;
 		default:
+			ERRMSG("UNHANDLED SIGNAL ");
 			break;
 	}
 	__accmut__strcat(msg, __accmut__itoa(TEST_ID, 10));
@@ -199,6 +200,7 @@ void __accmut__set_sig_handlers(){
 
 #define DEFAULT_SEC (0)
 #define DEFAULT_USEC (5000)
+#define REAL_TIMES (1.5)
 
 void __accmut__sepcific_timer(){
 	long v_sec = 0;
@@ -212,22 +214,29 @@ void __accmut__sepcific_timer(){
 		//if the ori time file does not exisit, use the default timer value.
 		v_sec = DEFAULT_SEC;
 		v_usec = DEFAULT_USEC;
-		return;
+	}else{
+		fscanf(fp, "%ld", &v_sec);
+		fscanf(fp, "%ld", &v_usec);
+		fclose(fp);
 	}
-	fscanf(fp, "%ld", &v_sec);
-	fscanf(fp, "%ld", &v_usec);
-	fclose(fp);
-
+	
     ACCMUT_PROF_TICK.it_value.tv_sec = v_sec;  // sec
     ACCMUT_PROF_TICK.it_value.tv_usec = v_usec; // u sec.
     ACCMUT_PROF_TICK.it_interval.tv_sec = INTTERVAL_SEC;
     ACCMUT_PROF_TICK.it_interval.tv_usec =  INTTERVAL_USEC;
 
     
-	ACCMUT_REAL_TICK.it_value.tv_sec = v_sec*3;  // sec
-    ACCMUT_REAL_TICK.it_value.tv_usec = v_usec*3; // u sec.
-    ACCMUT_REAL_TICK.it_interval.tv_sec = INTTERVAL_SEC*3;
-    ACCMUT_REAL_TICK.it_interval.tv_usec =  INTTERVAL_USEC*3;
+	ACCMUT_REAL_TICK.it_value.tv_sec = v_sec * REAL_TIMES;  // sec
+    ACCMUT_REAL_TICK.it_value.tv_usec = v_usec * REAL_TIMES; // u sec.
+    ACCMUT_REAL_TICK.it_interval.tv_sec = INTTERVAL_SEC * REAL_TIMES;
+    ACCMUT_REAL_TICK.it_interval.tv_usec =  INTTERVAL_USEC * REAL_TIMES;
+
+    __real_fprintf(stderr, "PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
+    				ACCMUT_PROF_TICK.it_value.tv_sec ,
+    				ACCMUT_PROF_TICK.it_value.tv_usec = v_usec , 
+    				ACCMUT_REAL_TICK.it_value.tv_sec , 
+    				ACCMUT_REAL_TICK.it_value.tv_usec);
+
 }
 
 
@@ -361,7 +370,7 @@ void __accmut__load_all_muts(){
 	}
 	MUT_NUM = id - 1;
 
-	#if 1
+	#if 0
 	__real_fprintf(stderr, "\n----------------- DUMP ALL MUTS ------------------\n");
 	__real_fprintf(stderr, "TOTAL MUTS NUM : %d\n", MUT_NUM);
 	int i;

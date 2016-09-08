@@ -592,12 +592,6 @@ void __accmut__init_stdstream(){
 	STDFD_TO_ACC[2] = accmut_stderr;
 }
 
-
-
-void __accmut__filedump(ACCMUT_FILE *fp);
-
-void __accmut__oracledump();
-
 int __accmut__checkoutput(){
 	if(ORACLESIZE != CUR_STDOUT){
 		return 1;
@@ -671,31 +665,46 @@ void __accmut__oracledump(){
 	fprintf(stderr, "\n************ END OF ORACLE ***************\n\n");
 }
 
-void __accmut__filedump(ACCMUT_FILE *fp){
+void __accmut__filedump(FILE *fp){
 
-	if(fp == NULL){
+	int fd = fileno(fp);
+
+	if(fd < 0){
+		return;
+	}
+
+	ACCMUT_FILE* acc_fp = STDFD_TO_ACC[fd];
+
+	#if ACCMUT_IO_DEBUG
+		if(acc_fp == NULL){
+			ERRMSG("acc_fp SHOULD NOT BE NULL");
+			exit(ILL_STATE_ERR);
+		}
+	#endif
+
+	if(acc_fp == NULL){
 		fprintf(stderr, "NULL ACCMUT_FILE !!! @__accmut__filedump\n");
 		exit(ILL_STATE_ERR);
 	}
 
 	size_t sz;
-	if(fp->flags == O_RDONLY){
-		sz = fp->fsize;
-	}else if(fp->flags == O_WRONLY){
-		sz = fp->write_cur - fp->bufbase;
+	if(acc_fp->flags == O_RDONLY){
+		sz = acc_fp->fsize;
+	}else if(acc_fp->flags == O_WRONLY){
+		sz = acc_fp->write_cur - acc_fp->bufbase;
 	}else{
 		fprintf(stderr, "ERROR FILE FLAGS @ __accmut__filedump\n");
 		exit(ILL_STATE_ERR);
 	}
 
 	fprintf(stderr, "\n********** TID:%d  MID:%d  FD:%d  SIZE:%d ***********\n", \
-		TEST_ID, MUTATION_ID, fp->fd, sz);
+		TEST_ID, MUTATION_ID, acc_fp->fd, sz);
 
 	int i;
 	for(i = 0; i < sz; i++){
-		fprintf(stderr, "%c", *(fp->bufbase + i) );
+		fprintf(stderr, "%c", *(acc_fp->bufbase + i) );
 	}
 	
 	fprintf(stderr, "\n**** END **** TID:%d  MID:%d  FD:%d ***************\n\n", \
-		TEST_ID, MUTATION_ID, fp->fd);
+		TEST_ID, MUTATION_ID, acc_fp->fd);
 }

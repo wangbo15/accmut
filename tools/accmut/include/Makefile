@@ -12,14 +12,22 @@ SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_st
 
 EVAL_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_sma_eval.o
 
+DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_dma_fork.o
+
+
 sche_ar: libamsche.a
 
 eval: libameval.a
+
+dma: libamdma.a
 
 libamsche.a: $(SCHEMATA_AR_OBJ)
 	ar -rcs $@ $^
 
 libameval.a: $(EVAL_AR_OBJ)
+	ar -rcs $@ $^
+
+libamdma.a: $(DMA_AR_OBJ)
 	ar -rcs $@ $^
 
 accmut_config.o: accmut_config.c accmut_config.h accmut_async_sig_safe_string.h accmut_exitcode.h
@@ -40,6 +48,10 @@ accmut_schem.o: accmut_schem.c accmut_process.h accmut_io.h accmut_exitcode.h
 accmut_sma_eval.o: accmut_sma_eval.c accmut_process.h accmut_io.h accmut_exitcode.h
 	$(CC) $(CFLAGS) -c $<
 
+accmut_dma_fork.o: 	accmut_dma_fork.c accmut_process.h accmut_io.h accmut_exitcode.h
+	$(CC) $(CFLAGS) -c $<
+		
+		
 .PHONY: clean sche_ar
 clean:
 	rm -f *.o
