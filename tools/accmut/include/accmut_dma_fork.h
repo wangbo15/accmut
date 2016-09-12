@@ -12,7 +12,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <errno.h>
 
 #include <execinfo.h> //add for debug
 
@@ -21,13 +20,14 @@
 
 /** Added By Shiyqw **/
 
-#define MMPL 64 //MAX MUT NUM PER LOCATION 
+#define MMPL (32) //MAX MUT NUM PER LOCATION 
 
-int forked_active_set[MMPL]; 
+int forked_active_set[MMPL];
 int forked_active_num;
 int default_active_set[MAXMUTNUM + 1];
 int recent_set[MMPL];
 int recent_num;
+
 long temp_result[MMPL];
 
 typedef struct Eqclass {
@@ -39,7 +39,7 @@ typedef struct Eqclass {
 Eqclass eqclass[MMPL];
 int eq_num;
 
-#undef MMPL
+//#undef MMPL
 
 // Algorithms for Dynamic mutation anaylsis 
 
@@ -65,13 +65,28 @@ void __accmut__filter__variant(int from, int to) {
     }
 
 }
-//
+
+void __accmut__dump_eqclass(){
+    int i;
+    for(i = 0; i < eq_num; i++){
+        printf("%d'th EQCLS  size: %d  : ", i, eqclass[i].num);
+        int j;
+        for(j = 0; j < eqclass[i].num; j++){
+            printf("%d ", eqclass[i].mut_id[j]);
+        }
+        printf("\n");
+    }
+}
+
 
 void __accmut__divide__eqclass() {
     eq_num = 0;
     int i;
     for(i = 0; i < recent_num; ++i) {
         long result = temp_result[i];
+
+        // printf("DIVEQ : MID %d -> TMPRES %d\n", recent_set[i], temp_result[i]);
+
         int j;
         int flag = 0;
         for(j = 0; j < eq_num; ++j) {
@@ -88,7 +103,106 @@ void __accmut__divide__eqclass() {
             ++eq_num;
         }
     }
+    // __accmut__dump_eqclass();
 }
+
+/* OPTIMIAZTION FOR DIVIDE EQ CLS */
+#define DIV_EQ_CMP 1
+
+#define DIV_EQ_CL_ST 1
+
+void __accmut__divide__eqclass_cmp(int onlyhas_0, int onlyhas_1) {
+
+    int i;
+    if(onlyhas_0 == 0){
+
+        eqclass[0].num = 0;
+        eqclass[0].value = 0;
+
+        for(i = 0; i < recent_num; ++i) {
+            eqclass[0].mut_id[eqclass[0].num++] = recent_set[i];
+        }
+        eq_num = 1;
+        return;
+    }else if(onlyhas_1 == 1){
+        
+        eqclass[0].num = 0;
+        eqclass[0].value = 1;
+
+        for(i = 0; i < recent_num; ++i) {
+            eqclass[0].mut_id[eqclass[0].num++] = recent_set[i];
+        }
+        eq_num = 1;
+        return;
+    }
+
+    int res_0 = temp_result[0];
+
+    eqclass[0].num = 1;
+    eqclass[0].value = res_0;
+
+    eqclass[1].num = 0;
+    eqclass[1].value = 1 - res_0;
+
+
+    for(i = 1; i < recent_num; ++i) {
+
+        // printf("CPM : MID %d -> TMPRES %d\n", recent_set[i], temp_result[i]);
+
+        if(temp_result[i] == res_0){
+            eqclass[0].mut_id[eqclass[0].num++] = recent_set[i];
+        }else{
+            eqclass[1].mut_id[eqclass[1].num++] = recent_set[i];
+        }
+    }
+    eq_num = 2;
+    // __accmut__dump_eqclass();
+}
+
+
+void __accmut__divide__eqclass_cl_st() {
+
+    if(recent_num == 1){
+        eq_num = 1;
+        eqclass[0].num = 1;
+        eqclass[0].mut_id[0] = recent_set[0];
+        return;
+    }
+
+    int cur_zero_num = 0;
+    int i;
+    for(i = 0; i < recent_num; ++i) {
+
+        long result = temp_result[i];
+
+        // printf("CLST : MID %d -> TMPRES %d\n", recent_set[i], temp_result[i]);
+
+        if(result == 0){
+            if(cur_zero_num == 0){
+                eqclass[0].num = 1;
+                eqclass[0].mut_id[0] = recent_set[i];
+                cur_zero_num = 1;
+            }else{
+                eqclass[0].mut_id[cur_zero_num] = recent_set[i];
+                cur_zero_num ++;
+                eqclass[0].num = cur_zero_num;
+            }
+        }else{
+            int idx = i - cur_zero_num  + 1;
+            eqclass[idx].num = 1;
+            eqclass[idx].mut_id[0] = recent_set[i];
+        }
+    }
+    if(cur_zero_num > 0){
+        eq_num = recent_num - cur_zero_num + 1;
+    }else{
+        eq_num = 1;
+    }
+
+    //__accmut__dump_eqclass();
+}
+
+
 
 void __accmut__filter__mutants(int from, int to, int classid) {
     /** filter_mutants **/
@@ -127,7 +241,13 @@ long __accmut__fork__eqclass(int from, int to) {
 
          if(pid == 0) {
 
-            int r = setitimer(ITIMER_PROF, &tick, NULL);
+            int r1 = setitimer(ITIMER_REAL, &ACCMUT_REAL_TICK, NULL); 
+            int r2 = setitimer(ITIMER_PROF, &ACCMUT_PROF_TICK, NULL); 
+
+            if(r1 < 0 || r2 < 0){
+                ERRMSG("setitimer ERR ");
+                exit(1);
+            }
 
             __accmut__filter__mutants(from, to, i);
 
@@ -146,13 +266,14 @@ long __accmut__fork__eqclass(int from, int to) {
             // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 
             return eqclass[i].value;
+
          } else {
 
              waitpid(pid, NULL, 0);
 
             // fprintf(stderr, "FATHER-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
 
-             fprintf(stderr, "#\n");
+             // fprintf(stderr, "#\n");
 
             #if 0
 
@@ -183,6 +304,7 @@ long __accmut__fork__eqclass(int from, int to) {
 
 
 /** End Added **/
+extern int MUT_NUM;
 
 void __accmut__init(){
 
@@ -202,7 +324,7 @@ void __accmut__init(){
     __accmut__load_all_muts();
 
     int i;
-    for(i = 0; i <= MAXMUTNUM; ++i){
+    for(i = 0; i <= MUT_NUM; ++i){
         default_active_set[i] = 1;
     }
 }
@@ -418,6 +540,7 @@ long __accmut__process_i64_arith(int from, int to, long left, long right){
 
     /* divide */
     __accmut__divide__eqclass();
+
     /* fork */
     long result = __accmut__fork__eqclass(from, to);    //TODO:: i64 -> long, 2016.8.2
 
@@ -443,10 +566,18 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
 // }
 
     // generate recent_set
+
+    int onlyhas_1 = 1;
+    int onlyhas_0 = 0;
+
     int i;
     for(i = 0; i < recent_num; ++i){
         if(recent_set[i] == 0) {
             temp_result[i] = ori;
+
+            onlyhas_1 &= ori;
+            onlyhas_0 |= ori;
+
             continue;
         }
 
@@ -518,6 +649,9 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
                 exit(0);
         }//end switch
         temp_result[i] = mut_res;
+
+        onlyhas_1 &= mut_res;
+        onlyhas_0 |= mut_res;
     }//end for i
 
     if(recent_num == 1) {
@@ -528,7 +662,12 @@ int __accmut__process_i32_cmp(int from, int to, int left, int right){
     }
 
     /* divide */
-    __accmut__divide__eqclass();
+
+    #if DIV_EQ_CMP
+        __accmut__divide__eqclass_cmp(onlyhas_0, onlyhas_1);
+    #else
+        __accmut__divide__eqclass();
+    #endif
 
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
@@ -545,10 +684,18 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
     __accmut__filter__variant(from, to);
 
     // generate recent_set
+
+    int onlyhas_1 = 1;
+    int onlyhas_0 = 0;
+
     int i;
     for(i = 0; i < recent_num; ++i){
         if(recent_set[i] == 0) {
             temp_result[i] = ori;
+
+            onlyhas_1 &= ori;
+            onlyhas_0 |= ori;
+
             continue;
         }
 
@@ -621,6 +768,8 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
         }//end switch
         temp_result[i] = mut_res;
 
+        onlyhas_1 &= mut_res;
+        onlyhas_0 |= mut_res;
     }//end for i
 
     if(recent_num == 1) {
@@ -631,8 +780,12 @@ int __accmut__process_i64_cmp(int from, int to, long left, long right){
     }
 
     /* divide */
-    __accmut__divide__eqclass();
-    
+    #if DIV_EQ_CMP
+        __accmut__divide__eqclass_cmp(onlyhas_0, onlyhas_1);
+    #else
+        __accmut__divide__eqclass();
+    #endif
+
     /* fork */
     int result = __accmut__fork__eqclass(from, to);
 
@@ -1356,8 +1509,11 @@ int __accmut__prepare_call(int from, int to, int opnum, ...){
     }
 
    /* divide */
+    #if DIV_EQ_CL_ST
+    __accmut__divide__eqclass_cl_st();
+    #else
     __accmut__divide__eqclass();
-
+    #endif
     // printf("eq_num : %d\n", eq_num);
     // for (int i = 0; i < eq_num; ++i)
     // {
@@ -1503,7 +1659,12 @@ int __accmut__prepare_st_i32(int from, int to, int tobestore, int *addr){
 
 
    /* divide */
+    #if DIV_EQ_CL_ST
+    __accmut__divide__eqclass_cl_st();
+    #else
     __accmut__divide__eqclass();
+    #endif
+
 
     // for (int i = 0; i < eq_num; ++i)
     // {
@@ -1600,7 +1761,11 @@ int __accmut__prepare_st_i64(int from, int to, long tobestore, long *addr){
 
 
    /* divide */
+    #if DIV_EQ_CL_ST
+    __accmut__divide__eqclass_cl_st();
+    #else
     __accmut__divide__eqclass();
+    #endif
 
     // for (int i = 0; i < eq_num; ++i)
     // {
@@ -1628,6 +1793,6 @@ int __accmut__prepare_st_i64(int from, int to, long tobestore, long *addr){
     }
 
     return __accmut__apply_store_mut(m, tobestore, addr, 0);
-}
+}// end for __accmut__prepare_st_i64
 
 #endif

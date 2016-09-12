@@ -941,13 +941,13 @@ static void __accmut__output_set() {
 
         j--;
 
-        printf("--- I : %d J : %d\n",i, j);
+        //printf("--- I : %d J : %d\n",i, j);
 
         int k;
 
-        for(k = i; k <= j; k++){
-            printf("%d ORI: %ld , MUT: %ld, UNSUP: %d\n", k, ORIRES[loci], MUTRES[k], UNSUPORTED[k]);
-        }
+        // for(k = i; k <= j; k++){
+        //     printf("%d ORI: %ld , MUT: %ld, UNSUP: %d\n", k, ORIRES[loci], MUTRES[k], UNSUPORTED[k]);
+        // }
 
         for(k = i; k <= j; k++){
             if(UNSUPORTED[k] == 1){
@@ -1010,12 +1010,14 @@ static void __accmut__output_set() {
         }
     }
 
+#if 0
     fprintf(stderr, "########## SMA EVAL END ##########\n");
     fprintf(stderr, "TOTAL MUT: %d\n", MUT_NUM);
     fprintf(stderr, "TOTAL COVED: %d\n", total_coved);
     fprintf(stderr, "COVED BUT UNSUPORTED: %d\n", cbu);
     fprintf(stderr, "PARENT NUM: %d\n", pnum + cbu);
-
+#endif
+    
 }
 
 #define CALLSOP 55

@@ -17,18 +17,19 @@
 #include <sys/stat.h>
 
 #include <fcntl.h>
+#include <errno.h>
 
 
 #define ACCMUT_ORI_TEST 0
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
 //SWITCH FOR STATIC ANALYSIS
-#define ACCMUT_STATIC_ANALYSIS_EVAL 1
+#define ACCMUT_STATIC_ANALYSIS_EVAL 0
 
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -36,21 +37,25 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="test";
+const char PROJECT[]="tcas";
 
 
-#if ACCMUT_DYNAMIC_ANALYSIS_FORK
+//#if ACCMUT_DYNAMIC_ANALYSIS_FORK
 	int HOLDER[1024] __attribute__((aligned(0x1000))) = {0};
 	#define MUTATION_ID (HOLDER[0])
-#else
-	int MUTATION_ID = 0;
-#endif
+//#else
+//	int MUTATION_ID = 0;
+//#endif
 
 int TEST_ID = -1;
 
 /** Set Timer **/
 //TODO: REAL OR PROF
 struct itimerval tick;
+
+struct itimerval ACCMUT_PROF_TICK;
+struct itimerval ACCMUT_REAL_TICK;
+
 long VALUE_SEC = 0;
 long VALUE_USEC = 0;
 long INTTERVAL_SEC = 0;
@@ -149,7 +154,7 @@ void __accmut__exit_time(){
 	//__accmut__filedump(accmut_stdout);
 }
 
-#define ACCMUT_MUTE 0
+#define ACCMUT_MUTE 1
 
 void __accmut__SIGSEGV__handler(){
 
@@ -171,8 +176,9 @@ void __accmut__SIGSEGV__handler(){
 #endif
 
 #if 1
-	_exit(1);
-	// kill(getpid(), SIGKILL);
+	// exit(0);
+	// _exit(1);
+	kill(getpid(), SIGKILL);
 #else
     signal(SIGSEGV, SIG_DFL);
 #endif
@@ -198,6 +204,7 @@ void __accmut__SIGABRT__handler(){
 #endif
 
 #if 1
+	// exit(0);
 	kill(getpid(), SIGKILL);
 #else
     signal(SIGABRT, SIG_DFL);
@@ -205,7 +212,7 @@ void __accmut__SIGABRT__handler(){
 }
 
 /* The signal handler of time out process */
-void __accmut__handler(int sig){
+void __accmut__timeout_handler(int sig){
 	#if 0
 	int fd = 2;
 
@@ -231,41 +238,104 @@ void __accmut__handler(int sig){
 
 void __accmut__set_sig_handlers(){
 
-	signal(SIGPROF, __accmut__handler); 
+	signal(SIGPROF, __accmut__timeout_handler);
+
+	signal(SIGALRM, __accmut__timeout_handler);
 
     signal(SIGSEGV, __accmut__SIGSEGV__handler);
 
     signal(SIGABRT, __accmut__SIGABRT__handler);
 }
 
+// void __accmut__sepcific_timer(){
+// 	char path[128] = {0};
+// 	sprintf(path, "%s%s%s/%d", getenv("HOME"), "/tmp/accmut/oritime/", PROJECT, TEST_ID);
+// 	FILE * fp = fopen(path, "r");
+// 	if(fp == NULL){
+// 		fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
+// 		//if the ori time file does not exisit, use the default timer value.
+// 		VALUE_SEC = 0;
+// 		VALUE_USEC = 5000;
+// 		return;
+// 	}
+// 	fscanf(fp, "%d", &VALUE_SEC);
+// 	fscanf(fp, "%d", &VALUE_USEC);
+// 	fclose(fp);
+
+//     tick.it_value.tv_sec = VALUE_SEC;  // sec
+//     tick.it_value.tv_usec = VALUE_USEC; // u sec.
+//     tick.it_interval.tv_sec = INTTERVAL_SEC;
+//     tick.it_interval.tv_usec =  INTTERVAL_USEC;
+
+// }
+
+
+#define INTTERVAL_SEC (0)
+#define INTTERVAL_USEC (50)
+
+#define DEFAULT_SEC (0)
+#define DEFAULT_USEC (300)
+#define REAL_TIMES (3)
+
 void __accmut__sepcific_timer(){
+
+	long v_sec = DEFAULT_SEC;
+	long v_usec = DEFAULT_USEC;	
+#if 0	
+	long v_sec = 0;
+	long v_usec = 0;
+
 	char path[128] = {0};
 	sprintf(path, "%s%s%s/%d", getenv("HOME"), "/tmp/accmut/oritime/", PROJECT, TEST_ID);
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
 		fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
 		//if the ori time file does not exisit, use the default timer value.
-		VALUE_SEC = 0;
-		VALUE_USEC = 5000;
-		return;
+		v_sec = DEFAULT_SEC;
+		v_usec = DEFAULT_USEC;
+	}else{
+		fscanf(fp, "%ld", &v_sec);
+		fscanf(fp, "%ld", &v_usec);
+		fclose(fp);
 	}
-	fscanf(fp, "%d", &VALUE_SEC);
-	fscanf(fp, "%d", &VALUE_USEC);
-	fclose(fp);
+#endif	
+    ACCMUT_PROF_TICK.it_value.tv_sec = v_sec;  // sec
+    ACCMUT_PROF_TICK.it_value.tv_usec = v_usec; // u sec.
+    ACCMUT_PROF_TICK.it_interval.tv_sec = INTTERVAL_SEC;
+    ACCMUT_PROF_TICK.it_interval.tv_usec =  INTTERVAL_USEC;
 
-    tick.it_value.tv_sec = VALUE_SEC;  // sec
-    tick.it_value.tv_usec = VALUE_USEC; // u sec.
-    tick.it_interval.tv_sec = INTTERVAL_SEC;
-    tick.it_interval.tv_usec =  INTTERVAL_USEC;
+    
+	ACCMUT_REAL_TICK.it_value.tv_sec = v_sec * REAL_TIMES;  // sec
+    ACCMUT_REAL_TICK.it_value.tv_usec = v_usec * REAL_TIMES; // u sec.
+    ACCMUT_REAL_TICK.it_interval.tv_sec = INTTERVAL_SEC * REAL_TIMES;
+    ACCMUT_REAL_TICK.it_interval.tv_usec =  INTTERVAL_USEC * REAL_TIMES;
+
+    fprintf(stdout, "PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
+    				ACCMUT_PROF_TICK.it_value.tv_sec ,
+    				ACCMUT_PROF_TICK.it_value.tv_usec = v_usec , 
+    				ACCMUT_REAL_TICK.it_value.tv_sec , 
+    				ACCMUT_REAL_TICK.it_value.tv_usec);
 
 }
+
+#undef INTTERVAL_SEC
+#undef INTTERVAL_USEC
+#undef DEFAULT_SEC
+#undef DEFAULT_USEC
+#undef REAL_TIMES
 
 
 void __accmut__exec_inst_nums(){
-	// fprintf(stderr, "0");
-	EXEC_INSTS++;
+	fprintf(stderr, "#");
+	// EXEC_INSTS++;
 }
 
+void __accmut__exec_inst_nums_acc(){
+	fprintf(stderr, "*");
+}
+void __accmut__exec_inst_nums_process(){
+	// fprintf(stderr, "#");
+}
 
 void __accmut__debug(int index){
 	// if(MUTATION_ID == 0)
@@ -275,6 +345,9 @@ void __accmut__debug(int index){
 	}
 }
 
+void __accmut__exec_inst_nums_fname(char *s){
+	fprintf(stderr, "%s\n", s);
+}
 
 void __accmut__load_all_muts(){
     char path[256];

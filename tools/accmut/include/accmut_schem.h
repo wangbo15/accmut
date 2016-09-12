@@ -85,16 +85,28 @@ void __accmut__init(){
 				exit(0);
 			}else if(pid == 0){//child process
 
+	            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ | PROT_WRITE)) {
+	                perror("mprotect ERR : PROT_READ | PROT_WRITE");
+	                exit(errno);
+	            }
+
 				MUTATION_ID = i;
+				
+	            if (mprotect((void *)(&MUTATION_ID), PAGESIZE, PROT_READ)) {
+	                perror("mprotect ERR : PROT_READ");
+	                exit(errno);
+	            }
 				
 				//fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
 				
-				int r = setitimer(ITIMER_PROF, &tick, NULL); // TODO:ITIMER_REAL?
+				int r1 = setitimer(ITIMER_REAL, &ACCMUT_REAL_TICK, NULL); 
 				
-				if(r < 0){
+				int r2 = setitimer(ITIMER_PROF, &ACCMUT_PROF_TICK, NULL); 
+
+				if(r1 < 0 || r2 < 0){
 					ERRMSG("setitimer ERR ");
-					exit(0);
-				}
+					exit(1);
+				}				
 
 				break;
 			}else{//father process	
@@ -112,9 +124,9 @@ void __accmut__init(){
 
 	free(MUTS_ON);
 
-#if 1	
+#if 1
 	if(MUTATION_ID == 0){
-		fprintf(stderr, "TOTALFORK : %d\n",	TOTALFORK);
+		fprintf(stdout, "TOTALFORK : %d\n",	TOTALFORK);
 	}
 #endif
 
