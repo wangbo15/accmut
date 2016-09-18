@@ -78,6 +78,7 @@ void __accmut__dump_eqclass(){
     }
 }
 
+#define USING_DIVIDE 1
 
 void __accmut__divide__eqclass() {
     eq_num = 0;
@@ -89,6 +90,8 @@ void __accmut__divide__eqclass() {
 
         int j;
         int flag = 0;
+
+        #if USING_DIVIDE
         for(j = 0; j < eq_num; ++j) {
             if(eqclass[j].value == result) {
                 eqclass[j].mut_id[eqclass[j].num++] = recent_set[i];
@@ -96,6 +99,8 @@ void __accmut__divide__eqclass() {
                 break;
             }
         }
+        #endif
+
         if (flag == 0) {
             eqclass[eq_num].value = result;
             eqclass[eq_num].num = 1;
@@ -241,6 +246,30 @@ long __accmut__fork__eqclass(int from, int to) {
 
          if(pid == 0) {
 
+            // struct timeval tv_cur;
+
+            // gettimeofday(&tv_cur, NULL);
+
+            // long used_sec =  tv_cur.tv_sec - tv_begin.tv_sec;
+            // long used_usec = tv_cur.tv_usec - tv_begin.tv_usec;
+
+            // if(used_usec < 0){
+            //     used_sec--;
+            //     used_usec += 1000000;
+            // }
+
+            // ACCMUT_REAL_TICK.it_value.tv_sec -= used_sec;
+            // ACCMUT_REAL_TICK.it_value.tv_sec -= used_usec;
+
+            // ACCMUT_PROF_TICK.it_value.tv_sec -= used_sec;
+            // ACCMUT_PROF_TICK.it_value.tv_sec -= used_usec;
+
+            // fprintf(stdout, "MODIFIED PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
+            //         ACCMUT_PROF_TICK.it_value.tv_sec ,
+            //         ACCMUT_PROF_TICK.it_value.tv_usec, 
+            //         ACCMUT_REAL_TICK.it_value.tv_sec , 
+            //         ACCMUT_REAL_TICK.it_value.tv_usec);
+
             int r1 = setitimer(ITIMER_REAL, &ACCMUT_REAL_TICK, NULL); 
             int r2 = setitimer(ITIMER_PROF, &ACCMUT_PROF_TICK, NULL); 
 
@@ -273,7 +302,7 @@ long __accmut__fork__eqclass(int from, int to) {
 
             // fprintf(stderr, "FATHER-> MUT: %d , PID: %d\n", MUTATION_ID, getpid());
 
-             // fprintf(stderr, "#\n");
+            // fprintf(stderr, "#\n");
 
             #if 0
 

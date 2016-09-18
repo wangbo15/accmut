@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#define NEED_LOOP_INFO 0
+#define NEED_LOOP_INFO 1
 
 #if NEED_LOOP_INFO
 #include "llvm/Analysis/LoopInfo.h"

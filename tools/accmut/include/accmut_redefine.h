@@ -88,6 +88,8 @@
 #define ferror(a) __accmut__ferror(a)
 #define fileno(a) __accmut__fileno(a)
 #define freopen(a,b,c) __accmut__freopen(a,b,c)
+#define feof(a) __accmut__feof(a)
+
 
 /****** POSIX FILE ******/
 #define unlink(a) __accmut__unlink(a)

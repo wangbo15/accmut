@@ -37,7 +37,7 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="tcas";
+const char PROJECT[]="printtokens";
 
 
 //#if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -154,7 +154,7 @@ void __accmut__exit_time(){
 	//__accmut__filedump(accmut_stdout);
 }
 
-#define ACCMUT_MUTE 1
+#define ACCMUT_MUTE 0
 
 void __accmut__SIGSEGV__handler(){
 
@@ -275,13 +275,14 @@ void __accmut__set_sig_handlers(){
 
 #define DEFAULT_SEC (0)
 #define DEFAULT_USEC (300)
-#define REAL_TIMES (3)
+#define REAL_TIMES (2)
 
 void __accmut__sepcific_timer(){
 
+#if 0
 	long v_sec = DEFAULT_SEC;
 	long v_usec = DEFAULT_USEC;	
-#if 0	
+#else
 	long v_sec = 0;
 	long v_usec = 0;
 
@@ -312,7 +313,7 @@ void __accmut__sepcific_timer(){
 
     fprintf(stdout, "PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
     				ACCMUT_PROF_TICK.it_value.tv_sec ,
-    				ACCMUT_PROF_TICK.it_value.tv_usec = v_usec , 
+    				ACCMUT_PROF_TICK.it_value.tv_usec, 
     				ACCMUT_REAL_TICK.it_value.tv_sec , 
     				ACCMUT_REAL_TICK.it_value.tv_usec);
 

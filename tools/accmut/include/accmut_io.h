@@ -183,6 +183,22 @@ int __accmut__fileno(ACCMUT_FILE *fp){
 	return fp->fd;
 }
 
+int __accmut__feof(ACCMUT_FILE *fp){
+
+	if(fp == NULL){
+		return EOF;
+	}
+	if((fp->flags & O_RDONLY) == 0){
+		#if ACCMUT_IO_DEBUG
+		fprintf(stderr, "OPLY SUPPORT O_RDONLY MODE @__accmut__feof\n");
+		#endif
+		return EOF;
+	}
+
+	int result = (fp->flags & _IO_EOF_SEEN) != 0;
+	return result;
+}
+
 ACCMUT_FILE * __accmut__freopen(const char *path, const char *mode, ACCMUT_FILE *fp){
 	ACCMUT_FILE * newfp = __accmut__fopen(path, mode);
 	if(newfp == NULL){
@@ -244,6 +260,7 @@ char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
 		#if ACCMUT_IO_DEBUG
 			fprintf(stderr, "READ OVERFLOW @ __accmut__fgets, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
 		#endif
+		fp->flags |= _IO_EOF_SEEN;
 		return NULL;
 	}
 	
@@ -275,6 +292,7 @@ int __accmut__getc(ACCMUT_FILE *fp){
 		#if ACCMUT_IO_DEBUG
 			fprintf(stderr, "READ OVERFLOW @ __accmut__getc, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
 		#endif
+		fp->flags |= _IO_EOF_SEEN;
 		return NULL;
 	}
 
@@ -296,6 +314,7 @@ size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
     	int res = (fp->bufend - fp->read_cur)/size;
     	fp->read_cur = fp->bufend;
     	//fprintf(stderr, "%s\n", s);
+    	fp->flags |= _IO_EOF_SEEN;
     	return res;
     }
     memcpy(s, fp->read_cur, bytes_requested);

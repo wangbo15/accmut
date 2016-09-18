@@ -147,7 +147,7 @@ Mutation *MutUtil::getMutation(string line, int id){
 	m->id = id;
 	m->type = mtype;
 	m->func = func;
-	m->index = index;
+	m->index = abs(index);
 	m->src_op = sop;
 	return m;
 }
