@@ -20,7 +20,7 @@
 
 /** Added By Shiyqw **/
 
-#define MMPL (32) //MAX MUT NUM PER LOCATION 
+#define MMPL (64) //MAX MUT NUM PER LOCATION 
 
 int forked_active_set[MMPL];
 int forked_active_num;

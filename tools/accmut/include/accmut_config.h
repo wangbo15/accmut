@@ -37,7 +37,7 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="printtokens";
+const char PROJECT[]="grep";
 
 
 //#if ACCMUT_DYNAMIC_ANALYSIS_FORK
