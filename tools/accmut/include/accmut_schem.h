@@ -58,12 +58,19 @@ void __accmut__init(){
 		exit(0);
 	}
 	int curmut, on_id;
+	
+	/*
 	while(fscanf(fp,"%d:%d", &curmut, &on_id) != EOF){
 			if(on_id == -1 || curmut == on_id){
 				//fprintf(stderr,"CURMUT: %d, ON_ID: %d\n", curmut, on_id);
 				*(MUTS_ON + curmut) = 1;
-			}				                	            
+			}	                	            
+    }*/
+
+	while(fscanf(fp,"%d", &curmut) != EOF){
+		*(MUTS_ON + curmut) = 1;                	            
     }
+
     fclose(fp);
 #elif ACCMUT_MUTATION_SCHEMATA
 	for(i = 0; i < MUT_NUM + 1; i++){

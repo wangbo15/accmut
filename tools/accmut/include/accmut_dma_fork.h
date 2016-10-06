@@ -227,6 +227,10 @@ void __accmut__filter__mutants(int from, int to, int classid) {
     }
 }
 
+
+FILE* forked_fp;
+
+
 long __accmut__fork__eqclass(int from, int to) {
 
     if(eq_num == 1) {
@@ -292,7 +296,10 @@ long __accmut__fork__eqclass(int from, int to) {
                 exit(errno);
             }
 
-            // fprintf(stderr, "%d %d\n", TEST_ID, MUTATION_ID);
+            #if 1
+            fprintf(forked_fp, "%d\n", MUTATION_ID);
+            fflush(NULL);
+            #endif
 
             return eqclass[i].value;
 
@@ -356,6 +363,22 @@ void __accmut__init(){
     for(i = 0; i <= MUT_NUM; ++i){
         default_active_set[i] = 1;
     }
+
+    
+
+    char path[256];
+    sprintf(path, "%s/tmp/accmut/input/%s/t%d", getenv("HOME"), PROJECT, TEST_ID);  
+
+    forked_fp = fopen(path ,"w");
+    // FILE* forked_fp = stderr;
+
+    if(forked_fp == NULL){
+        char msg[128] = "FOPEN ERR: ";
+        strcat(msg, path);
+        ERRMSG(msg);
+        exit(1);
+    }
+
 }
 
 

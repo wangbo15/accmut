@@ -26,10 +26,10 @@
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -37,7 +37,7 @@
 #define PAGESIZE 4096
 
 
-const char PROJECT[]="grep";
+const char PROJECT[]="printtokens";
 
 
 //#if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -151,7 +151,9 @@ void __accmut__exit_time(){
 	write(fd, res, __accmut__strlen(res));
 	close(fd);
 
-	//__accmut__filedump(accmut_stdout);
+	#if 0
+	__accmut__filedump(accmut_stdout);
+	#endif
 }
 
 #define ACCMUT_MUTE 0
@@ -279,7 +281,7 @@ void __accmut__set_sig_handlers(){
 
 void __accmut__sepcific_timer(){
 
-#if 0
+#if 1
 	long v_sec = DEFAULT_SEC;
 	long v_usec = DEFAULT_USEC;	
 #else
