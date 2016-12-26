@@ -410,7 +410,8 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 					if(oinst->isBinaryOp() || 
 						(oinst->getOpcode() == Instruction::Call) || 
 						isHandledCoveInst(oinst) ||
-						(oinst->getOpcode() == Instruction::PHI) ){
+						(oinst->getOpcode() == Instruction::PHI) ||
+						(oinst->getOpcode() == Instruction::Select) ){
 						AllocaInst *alloca = new AllocaInst(oinst->getType(), (oinst->getName().str()+".ptr"), cur_it);
 						StoreInst *str = new StoreInst(oinst, alloca, cur_it);
 						LoadInst *ld = new LoadInst(alloca, (oinst->getName().str()+".ld"), cur_it);

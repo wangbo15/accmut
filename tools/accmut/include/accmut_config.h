@@ -26,10 +26,10 @@
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 
-#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 1
+#define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -107,12 +107,19 @@ typedef struct PrepareCallParam{
 /************* ALL EXIT HANDLER ***************************/
 void __accmut__exit_check_output();
 
+
+/**************************************/
+#define DUMP_ALL_OUT_PUT 0
+/**************************************/
+
 void __accmut__exit_time(){
 
 #if 1
 	if(MUTATION_ID != 0){
 
-		//__accmut__filedump(accmut_stdout);
+		#if DUMP_ALL_OUT_PUT
+		__accmut__filedump(accmut_stdout);
+		#endif
 
 		return;
 	}
@@ -151,7 +158,7 @@ void __accmut__exit_time(){
 	write(fd, res, __accmut__strlen(res));
 	close(fd);
 
-	#if 0
+	#if DUMP_ALL_OUT_PUT
 	__accmut__filedump(accmut_stdout);
 	#endif
 }
@@ -276,7 +283,7 @@ void __accmut__set_sig_handlers(){
 #define INTTERVAL_USEC (50)
 
 #define DEFAULT_SEC (0)
-#define DEFAULT_USEC (300)
+#define DEFAULT_USEC (150)
 #define REAL_TIMES (2)
 
 void __accmut__sepcific_timer(){

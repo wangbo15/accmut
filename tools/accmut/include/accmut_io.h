@@ -83,7 +83,7 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 		case 'w':
 			omode = O_WRONLY;
 			oflags = O_CREAT|O_TRUNC;
-			break;			
+			break;
 		// case 'a':
 		// 	0flags = O_WRONLY | O_APPEND;
 		// 	break;
@@ -125,7 +125,24 @@ ACCMUT_FILE* __accmut__fopen(const char *path, const char *mode){
 		}
 		fp->flags = O_RDONLY;
 		fp->fd = _fd;
+		/*COYE TO A BACHE OF WRITEABLE MEMORY TO HANDLE __accmut__ungetc()
 		fp->bufbase = fp->read_cur = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, _fd, 0);
+		*/
+		char * map_buf = (char *) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, _fd, 0);
+		fp->bufbase = fp->read_cur = (char *) malloc(sb.st_size);
+		memcpy(fp->bufbase, map_buf, sb.st_size);
+
+		munmap(map_buf, sb.st_size);
+
+/*
+		int t;
+		fprintf(stderr, "\n----------------\n");
+		for(t = 0; t < sb.st_size; t++){
+			fprintf(stderr, "%c", (char ) (*(fp->bufbase + t)));
+		}
+		fprintf(stderr, "\n----------------\n");
+*/
+
 		fp->write_cur = NULL;
 		fp->fsize = sb.st_size;
 		fp->bufend = fp->bufbase + fp->fsize;
@@ -253,6 +270,10 @@ int __accmut__unlink(const char *pathname){
 /*********************** INPUT ****************************************/
 
 char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
+	if(fp->flags & _IO_EOF_SEEN != 0){
+		return  NULL;
+	}
+
 	if(size <= 0)
 		return NULL;
 		
@@ -288,18 +309,26 @@ char* __accmut__fgets(char *buf, int size, ACCMUT_FILE *fp){
 }
 
 int __accmut__getc(ACCMUT_FILE *fp){
+	if(fp->flags & _IO_EOF_SEEN != 0){
+		return  EOF;
+	}
+
 	if(fp->read_cur - fp->bufbase >= fp->fsize){
 		#if ACCMUT_IO_DEBUG
 			fprintf(stderr, "READ OVERFLOW @ __accmut__getc, TID: %d, MUT: %d, fd: %d\n", TEST_ID, MUTATION_ID, fp->fd);
 		#endif
 		fp->flags |= _IO_EOF_SEEN;
-		return NULL;
+		return EOF;
 	}
 
 	return  *((unsigned char *) fp->read_cur++);
 }
 
 size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
+	if(fp->flags & _IO_EOF_SEEN != 0){
+		return  0;
+	}
+
 	_IO_size_t bytes_requested = size * count;
 	if (bytes_requested == 0)
     	return 0;
@@ -320,6 +349,35 @@ size_t __accmut__fread(void *buf, size_t size, size_t count, ACCMUT_FILE *fp){
     memcpy(s, fp->read_cur, bytes_requested);
     fp->read_cur += bytes_requested;
     return count;
+}
+
+
+int __accmut__ungetc(int c, ACCMUT_FILE *fp){
+
+	if(c == EOF)
+		return EOF;
+
+	if(fp->flags != O_RDONLY){
+		#if ACCMUT_IO_DEBUG
+			fprintf(stderr, "UNGETC OF NON-READABLE-FILE @ __accmut__ungetc, TID: %d, MUT: %d\n", TEST_ID, MUTATION_ID);
+		#endif
+		return EOF;
+	}
+
+	int res;
+	if(fp->read_cur > fp->bufbase 
+		&& (unsigned char) fp->read_cur[-1] == (unsigned char) c)
+	{
+		(fp->read_cur)--;
+		res = (unsigned char) c;
+	}
+	else
+		res = NULL;
+
+	if (res != EOF)
+   		fp->flags &= ~_IO_EOF_SEEN;
+
+	return res;
 }
 
 /*********************** OUTPUT ****************************************/

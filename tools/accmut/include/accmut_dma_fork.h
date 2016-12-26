@@ -112,9 +112,9 @@ void __accmut__divide__eqclass() {
 }
 
 /* OPTIMIAZTION FOR DIVIDE EQ CLS */
-#define DIV_EQ_CMP 1
+#define DIV_EQ_CMP USING_DIVIDE
 
-#define DIV_EQ_CL_ST 1
+#define DIV_EQ_CL_ST USING_DIVIDE
 
 void __accmut__divide__eqclass_cmp(int onlyhas_0, int onlyhas_1) {
 
@@ -245,6 +245,10 @@ long __accmut__fork__eqclass(int from, int to) {
     for(i = 1; i < eq_num; ++i) {
 
          int pid = 0;
+
+    #if 1
+         fprintf(stderr, "#\n");
+    #endif
 
          pid = fork();
 

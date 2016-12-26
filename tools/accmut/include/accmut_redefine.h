@@ -40,7 +40,7 @@
 //#define putc UNIMPL
 #define putchar UNIMPL
 //#define puts UNIMPL
-#define ungetc UNIMPL
+//#define ungetc UNIMPL
 
 
 //Block Input/Output functions
@@ -98,6 +98,7 @@
 #define fgets(a,b,c) __accmut__fgets(a,b,c)
 #define getc(a) __accmut__getc(a)
 #define fread(a,b,c,d) __accmut__fread(a,b,c,d)
+#define ungetc(a,b) __accmut__ungetc(a,b)
 
 /****** OUTPUT ******/
 #define fputc(a,b) __accmut__fputc(a,b)
