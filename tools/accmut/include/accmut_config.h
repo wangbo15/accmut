@@ -22,14 +22,14 @@
 
 #define ACCMUT_ORI_TEST 0
 //SWITCH FOR MUTATION SCHEMATA
-#define ACCMUT_MUTATION_SCHEMATA 0
+#define ACCMUT_MUTATION_SCHEMATA 1
 //SWITCH FOR STATIC ANALYSIS
 #define ACCMUT_STATIC_ANALYSIS_EVAL 0
 
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -283,7 +283,7 @@ void __accmut__set_sig_handlers(){
 #define INTTERVAL_USEC (50)
 
 #define DEFAULT_SEC (0)
-#define DEFAULT_USEC (150)
+#define DEFAULT_USEC (300)
 #define REAL_TIMES (2)
 
 void __accmut__sepcific_timer(){
@@ -355,8 +355,18 @@ void __accmut__debug(int index){
 	}
 }
 
-void __accmut__exec_inst_nums_fname(char *s){
-	fprintf(stderr, "%s\n", s);
+void __accmut__exec_inst_nums_fname(char *s, int key){
+#if 0
+	fprintf(stderr, "%s => %d\n", s, key);
+#else
+	//char *stderrpath = "/dev/stderr";
+	//int fd = open(stderrpath, O_WRONLY);
+	char msg[16] = {0};
+	__accmut__strcat(msg, __accmut__itoa(key, 10));
+	__accmut__strcat(msg, "\n");
+	write(2, msg, __accmut__strlen(msg));
+	//close(fd);
+#endif
 }
 
 void __accmut__load_all_muts(){

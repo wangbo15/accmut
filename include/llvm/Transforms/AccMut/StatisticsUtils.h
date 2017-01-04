@@ -30,6 +30,8 @@ using namespace std;
 class ExecInstNums: public FunctionPass{
 public:
 	static char ID;// Pass identification, replacement for typeid
+	static map<StringRef, int> funcNameID;
+    static int curID;
 	virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 	virtual bool runOnFunction(Function &F);
 	ExecInstNums(Module *M);	

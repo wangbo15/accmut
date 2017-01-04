@@ -20,6 +20,10 @@
 #include "llvm/Support/MathExtras.h"
 #include <algorithm>
 
+map<StringRef, int> ExecInstNums::funcNameID;
+int ExecInstNums::curID = 0;
+
+
 ExecInstNums::ExecInstNums(Module *M) : FunctionPass(ID) {
 	this->TheModule = M;
 }
@@ -74,16 +78,36 @@ bool ExecInstNums::runOnFunction(Function & F){
 
 #endif
 
+#define OMIT_MAIN 0
+
 bool ExecInstNums::runOnFunction(Function & F){
+
+#if OMIT_MAIN
 	if( F.getName().equals("main")){	//F.getName().startswith("__accmut__") ||
 		return false;
 	}
+#endif
 
 	if( F.getName().startswith("__accmut__exec_inst") ){
 		return false;
 	}
 
+	if( F.getName().equals("__accmut__strlen") || F.getName().equals("__accmut__strcat")
+		|| F.getName().equals("__accmut__itoa")){	//F.getName().startswith("__accmut__") ||
+			return false;
+	}
+
 	StringRef name = F.getName();
+
+	if(funcNameID.find(name) == funcNameID.end()){
+		funcNameID[name] = curID++;
+		llvm::errs()<<name<<":"<<funcNameID[name]<<"\n";
+	}
+
+	ConstantInt* const_key = ConstantInt::get(TheModule->getContext(), 
+			APInt(32, funcNameID[name], true));
+
+	
 	int name_len = name.size();
 
 	ArrayType* ArrayTy_0 = ArrayType::get(IntegerType::get(TheModule->getContext(), 8), name_len + 1);
@@ -115,8 +139,12 @@ bool ExecInstNums::runOnFunction(Function & F){
 		if(inst->getOpcode() == Instruction::PHI){
 			continue;
 		}
+
+		std::vector<Value*> params;
+		params.push_back(const_ptr_11);
+		params.push_back(const_key);
 		
-		CallInst* call = CallInst::Create(f, const_ptr_11, "", inst);
+		CallInst* call = CallInst::Create(f, params, "", inst);
 //		CallInst* call = CallInst::Create(f, "", inst);
 		call->setCallingConv(CallingConv::C);
 		call->setTailCall(false);
