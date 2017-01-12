@@ -21,7 +21,23 @@ Before the complation, make sure the switch-on `ACCMUT_GEN_MUT` in `accmut/inclu
 Use the *clang* to compile the program being tested. The mutation description file will be generated in the path *$HOME/tmp/accmut/mutations.txt*. Please make sure the directory has already existed. This file contains all mutations generated. Each line represents a LLVM-IR level mutation. 
 
 The mutation file `mutations.txt` follows the rules below:
-`MUT_TYPE:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]`
+`MUT_OPERATOR:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]`
+
+##Mutant opreators
+AccMut supports the opeartors as below:
+| Name | Description | Example  |
+| :-------------: |:-------------:| :-----:|
+| AOR | Replace arithmetic operator     | `a + b` → `a − b`        |
+| LOR | Replace logic operator          | `a & b` → `a | b`         |
+| ROR | Replace relational operator     | `a == b` → `a >= b`       |
+| LVR | Replace literal value           | T → T +1, T → 0, T → 1  |
+| COR | Replace bit operator            | `a && b` → `a \|\| b`       |
+| SOR | Replace shift operator          | `a >> b` → `a << b`       |
+| STDC | Delete a call                  | `foo()` → nop          |
+| STDS | Delete a store                 | `a = 5` → nop          |
+| UOI | Insert a unary operation        | `b = a` → `b = ++a` OR `foo(a)`->`foo(++a)`      |
+| ROV | Replace the operation value     | `foo(a,b)` → `foo(b,a)` OR `a-b`->`b-a`     	   |
+| ABV | Take absolute value     | `foo(a,b)` → `foo(abs(a),b)` OR `a-b` ->  `abs(a)-b`      |
 
 
 
@@ -48,7 +64,7 @@ For example, a method invocation:
 ```
 will be transfered into a sequence of IRs as below:
 ```
- %1 = call i32 (i32, i32, i32, ...) @__accmut__prepare_call(i32 1, i32 16, i32 2, i16 512, i32* %a.addr, i16 513, i32* %cons_alias)
+  %1 = call i32 (i32, i32, i32, ...) @__accmut__prepare_call(i32 1, i32 16, i32 2, i16 512, i32* %a.addr, i16 513, i32* %cons_alias)
   %hasstd = icmp eq i32 %1, 0
   br i1 %hasstd, label %if.then, label %if.else
 
@@ -65,3 +81,5 @@ if.else:                                          ; preds = %for.body
 AccMut pass the pointers of the parameters to the function `__accmut__prepare_call`, in which we can judge the mutants' types and apply them. For example, we can exange the pointees' value of the 2 pointers to implement an ROV mutant. And if the current mutant is STDC, `__accmut__prepare_call` will fork a new process then directly return 0. The new process will go into the `if.else` branch, in which there is just a dummy function call. By this way, we can handle mutants on `call` and `store`.
 
 
+##Acknowledgements
+Thanks for the excellent project LLVM. Our code follows the GPL license. 
