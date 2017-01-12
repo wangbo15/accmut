@@ -6,10 +6,12 @@ AccMut is a framework of mutation testing for C programs built on the top of the
 Accmut has several types of compiling configuration. The config file is in the file `accmut/include/llvm/Transforms/AccMut/Config.h` . We can use the macros to choose which type to build, such as mutation generation and mutation instrumentation.
 The compiling commands are shown below.
 
-* cd the-root-of-accmut
-* mkdir build
-* ../configure --enable-optimized
-* make
+* `cd the-root-of-accmut`
+* `mkdir build`
+* `../configure --enable-optimized`
+* `make`
+
+Note that the add the `--enable-optimized` option will get the release version of LLVM, if you want to get the debug version please remove it. The compiling time of release is much shorter than debug.
 
 After building we can find the executable file at `build
 /Release+Asserts/bin/clang`.
@@ -28,7 +30,7 @@ AccMut supports the opeartors as below:
 
 |Name         | Description           | Example  |
 | :-------------: |:-------------:| :-----:|
-|AOR    |  Replace arithmetic operator | a + b -> a − b |
+|AOR    |  Replace arithmetic operator | `a + b` -> `a − b` |
 | LOR | Replace logic operator          | `a & b` -> `a | b`  |
 | ROR | Replace relational operator     | `a == b` -> `a >= b`       |
 | LVR | Replace literal value           | T -> T+1, T -> 0, T -> 1  |
