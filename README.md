@@ -25,20 +25,20 @@ The mutation file `mutations.txt` follows the rules below:
 
 ##Mutant opreators
 AccMut supports the opeartors as below:
-| Name | Description | Example  |
-| :-------------: |:-------------:| :-----:|
-| AOR | Replace arithmetic operator     | `a + b` → `a − b`        |
-| LOR | Replace logic operator          | `a & b` → `a | b`         |
-| ROR | Replace relational operator     | `a == b` → `a >= b`       |
-| LVR | Replace literal value           | T → T +1, T → 0, T → 1  |
-| COR | Replace bit operator            | `a && b` → `a \|\| b`       |
-| SOR | Replace shift operator          | `a >> b` → `a << b`       |
-| STDC | Delete a call                  | `foo()` → nop          |
-| STDS | Delete a store                 | `a = 5` → nop          |
-| UOI | Insert a unary operation        | `b = a` → `b = ++a` OR `foo(a)`->`foo(++a)`      |
-| ROV | Replace the operation value     | `foo(a,b)` → `foo(b,a)` OR `a-b`->`b-a`      |
-| ABV | Take absolute value     | `foo(a,b)` → `foo(abs(a),b)` OR `a-b` ->  `abs(a)-b`      |
 
+|Name         | Description           | Example  |
+| :-------------: |:-------------:| :-----:|
+|AOR    |  Replace arithmetic operator | a + b -> a − b |
+| LOR | Replace logic operator          | `a & b` -> `a | b`  |
+| ROR | Replace relational operator     | `a == b` -> `a >= b`       |
+| LVR | Replace literal value           | T -> T+1, T -> 0, T -> 1  |
+| COR | Replace bit operator            | `a && b` -> `a || b`       |
+| SOR | Replace shift operator          | `a >> b` -> `a << b`       |
+| STDC | Delete a call                  | `foo()` -> nop          |
+| STDS | Delete a store                 | `a = 5` -> nop          |
+| UOI | Insert a unary operation        | `b = a` -> `b = ++a` OR `foo(a)`->`foo(++a)`  |
+| ROV | Replace the operation value     | `foo(a,b)` -> `foo(b,a)` OR `a-b`->`b-a`      |
+| ABV | Take absolute value     | `foo(a,b)` -> `foo(abs(a),b)` OR `a-b` ->  `abs(a)-b`      |
 
 
 ## Instrument the mutants into the C program.
