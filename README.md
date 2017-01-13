@@ -23,7 +23,7 @@ Before the complation, make sure the switch-on `ACCMUT_GEN_MUT` in `accmut/inclu
 Use the *clang* to compile the program being tested. The mutation description file will be generated in the path *$HOME/tmp/accmut/mutations.txt*. Please make sure the directory has already existed. This file contains all mutations generated. Each line represents a LLVM-IR level mutation. 
 
 The mutation file `mutations.txt` follows the rules below:
-`MUT_OPERATOR:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]`
+`MUT_OPERATOR:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]*`
 
 ##Mutant opreators
 AccMut supports the opeartors as below:
