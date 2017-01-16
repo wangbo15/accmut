@@ -1,6 +1,14 @@
 ﻿# AccMut
 AccMut is a framework of mutation testing for C programs built on the top of the Low Level Virtual Machine (LLVM) version 3.8. AccMut generates mutants on LLVM IR level and integrates some acclerating techniques, such as mutation schemata, split-stream execution and dynamic mutation analysis.
 
+##Overview
+AccMut contains three main components: Mutation Generator, Mutation Instrumenter and Runtime Library. AccMut processes mutation analysis by the following steps.
+* Compile the source code of the program into LLVM IR. Mutation Generator generates mutants of the LLVM IR code.
+* Mutation Instrumenter instrument mutants into the IR code of the program using mutation schemata. Then compile the IR code into object files.
+* LLVM links the object files with Runtime Library and obtains an executable file of the program.
+* The executable file executes each test on all mutants. When IO operations are involved, Runtime Library ensures that the operations performed by different processes would not interfere with each other based on the copy-on-write mechanism.
+
+
 ## Compile AccMut
 
 Accmut has several types of compiling configuration. The config file is in the file `accmut/include/llvm/Transforms/AccMut/Config.h` . We can use the macros to choose which type to build, such as mutation generation and mutation instrumentation.
@@ -24,6 +32,9 @@ Use the *clang* to compile the program being tested. The mutation description fi
 
 The mutation file `mutations.txt` follows the rules below:
 `MUT_OPERATOR:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]*`
+
+As we mutate on the LLVM IR level, each IR instruction corresponds to a location. We apply a set of mutation operators on IR
+instructions to produce mutants.
 
 ##Mutant opreators
 AccMut supports the opeartors as below:
