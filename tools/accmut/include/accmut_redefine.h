@@ -8,7 +8,7 @@
 /*************** STDIO.H *******************/
 //Formatted Input/Output functions
 //#define fprintf UNIMPL
-#define fscanf UNIMPL
+//#define fscanf UNIMPL
 //#define printf UNIMPL
 #define scanf UNIMPL
 //#define sprintf UNIMPL
@@ -19,7 +19,7 @@
 
 //File Operation functions
 //#define fclose UNIMPL
-#define fflush UNIMPL
+//#define fflush UNIMPL
 //#define fopen UNIMPL
 //#define freopen UNIMPL
 #define remove UNIMPL
@@ -58,7 +58,7 @@
 #define clearerr UNIMPL
 #define feof UNIMPL
 //#define ferror UNIMPL
-#define perror UNIMPL
+//#define perror UNIMPL
 
 /*************** END OF STDIO.H *************/
 
@@ -99,6 +99,8 @@
 #define getc(a) __accmut__getc(a)
 #define fread(a,b,c,d) __accmut__fread(a,b,c,d)
 #define ungetc(a,b) __accmut__ungetc(a,b)
+#define fscanf(...) __accmut__fscanf(__VA_ARGS__)
+
 
 /****** OUTPUT ******/
 #define fputc(a,b) __accmut__fputc(a,b)
@@ -108,6 +110,9 @@
 #define fwrite(a,b,c,d) __accmut__fwrite(a,b,c,d)
 #define fprintf(...) __accmut__fprintf(__VA_ARGS__)
 #define printf(...) __accmut__printf(__VA_ARGS__)
+
+#define perror(a) __accmut__perror(a)
+#define fflush(a) __accmut__fflush(a)
 
 
 //#endif  //USE_ACCMUT_IO

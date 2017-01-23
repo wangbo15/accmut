@@ -246,7 +246,7 @@ long __accmut__fork__eqclass(int from, int to) {
 
          int pid = 0;
 
-    #if 0
+    #if 1
          fprintf(stderr, "#\n");
     #endif
 
