@@ -78,7 +78,7 @@ void __accmut__dump_eqclass(){
     }
 }
 
-#define USING_DIVIDE 1
+#define USING_DIVIDE 0
 
 void __accmut__divide__eqclass() {
     eq_num = 0;

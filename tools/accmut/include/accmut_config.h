@@ -108,10 +108,6 @@ typedef struct PrepareCallParam{
 void __accmut__exit_check_output();
 
 
-/**************************************/
-#define DUMP_ALL_OUT_PUT 0
-/**************************************/
-
 void __accmut__exit_time(){
 
 #if 1
@@ -158,8 +154,12 @@ void __accmut__exit_time(){
 	write(fd, res, __accmut__strlen(res));
 	close(fd);
 
+/**************************************/
+#define DUMP_ALL_OUT_PUT 0
+/**************************************/
 	#if DUMP_ALL_OUT_PUT
 	__accmut__filedump(accmut_stdout);
+	__accmut__filedump(accmut_stderr);
 	#endif
 }
 
