@@ -2,15 +2,16 @@
 #CC = gcc
 CC = $(accmut)/build/Release+Asserts/bin/clang
 
-#CFLAFS = -Wall
+CFLAFS = -Wall
 #CFLAGS = -Wall -g
-CFLAGS = -fno-builtin-fprintf -Wl,--wrap=fprintf -Wl,--wrap=fopen
+#WRAP_FLAGS = -fno-builtin-fprintf -Wl,--wrap=fprintf -Wl,--wrap=fopen
 
 DEFI = -D ACCMUT_STATIC_ANALYSIS_EVAL
 
 
 
-SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_schem.o
+#SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_schem.o
+SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_schem.o
 
 EVAL_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_sma_eval.o
 

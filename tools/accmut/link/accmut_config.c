@@ -5,6 +5,11 @@
 #include <math.h>
 #endif
 
+
+#define __real_fprintf fprintf
+#define __wrap_fopen fopen
+#define __wrap_fclose fclose
+
 const char PROJECT[]="tcas";
 
 //#if ACCMUT_DYNAMIC_ANALYSIS_FORK
@@ -32,7 +37,6 @@ unsigned long long EXEC_INSTS = 0;
 
 #define MUTFILELINE 128
 
-
 Mutation* ALLMUTS[MAXMUTNUM + 1];
 int MUT_NUM;
 int *MUTS_ON;
@@ -44,7 +48,9 @@ void __accmut__exit_check_output();
 
 void __accmut__exit_time(){
 
+#if 0
 	__accmut__filedump(stdout);
+#endif
 
 #if 1
 	if(MUTATION_ID != 0){
@@ -210,7 +216,9 @@ void __accmut__sepcific_timer(){
 	sprintf(path, "%s%s%s/%d", getenv("HOME"), "/tmp/accmut/oritime/", PROJECT, TEST_ID);
 	FILE * fp = fopen(path, "r");
 	if(fp == NULL){
+		#if 0
 		__real_fprintf(stderr, "WARNING : ORI TIME FILE DOSE NOT EXISIT : %s\n", path);
+		#endif
 		//if the ori time file does not exisit, use the default timer value.
 		v_sec = DEFAULT_SEC;
 		v_usec = DEFAULT_USEC;
@@ -231,12 +239,13 @@ void __accmut__sepcific_timer(){
     ACCMUT_REAL_TICK.it_interval.tv_sec = INTTERVAL_SEC * REAL_TIMES;
     ACCMUT_REAL_TICK.it_interval.tv_usec =  INTTERVAL_USEC * REAL_TIMES;
 
+    #if 0
     __real_fprintf(stderr, "PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
     				ACCMUT_PROF_TICK.it_value.tv_sec ,
     				ACCMUT_PROF_TICK.it_value.tv_usec = v_usec , 
     				ACCMUT_REAL_TICK.it_value.tv_sec , 
     				ACCMUT_REAL_TICK.it_value.tv_usec);
-
+    #endif
 }
 
 

@@ -8,7 +8,7 @@
 #include "accmut_process.h"
 #include "accmut_arith_common.h"
 #include "accmut_config.h"
-#include "accmut_io.h"
+/*#include "accmut_io.h"*/
 #include "accmut_exitcode.h"
 
 extern struct itimerval ACCMUT_PROF_TICK;
@@ -25,7 +25,8 @@ extern int MUT_NUM;
 extern int *MUTS_ON;
 
 
-#define fprintf __real_fprintf
+//#define fprintf __real_fprintf
+#define __real_fprintf fprintf
 /******************************************************/
 
 
@@ -39,8 +40,10 @@ void __accmut__init(){
 
 	__accmut__set_sig_handlers();
 	
+#if 0
 	__accmut__init_stdstream();
-    
+#endif
+
 	if(TEST_ID < 0){
 		ERRMSG("TEST_ID NOT INIT");
 		exit(ENV_ERR);
@@ -136,7 +139,7 @@ void __accmut__init(){
 
 	free(MUTS_ON);
 
-#if 1	
+#if 0
 	if(MUTATION_ID == 0){
 		fprintf(stderr, "TOTALFORK : %d\n",	TOTALFORK);
 	}

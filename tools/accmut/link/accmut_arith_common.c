@@ -5,6 +5,7 @@
 #include "accmut_config.h"
 #include "accmut_exitcode.h"
 
+#define __real_fprintf fprintf
 
 int __accmut__cal_i32_arith(int op, int a, int b){// TODO:: add float point
 	switch(op){
