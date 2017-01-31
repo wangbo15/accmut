@@ -424,6 +424,38 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			}
 
 			Function* precallfunc = TheModule->getFunction("__accmut__prepare_call");
+
+			if (!precallfunc) {
+				std::vector<Type*>FuncTy_3_args;
+				FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+				FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+				FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+				FunctionType* FuncTy_3 = FunctionType::get(
+				/*Result=*/IntegerType::get(TheModule->getContext(), 32),
+				/*Params=*/FuncTy_3_args,
+				/*isVarArg=*/true);
+				precallfunc = Function::Create(
+										 /*Type=*/FuncTy_3,
+										 /*Linkage=*/GlobalValue::ExternalLinkage,
+										 /*Name=*/"__accmut__prepare_call", TheModule); // (external, no body)
+				precallfunc->setCallingConv(CallingConv::C);
+			}
+			AttributeSet func___accmut__prepare_call_PAL;
+			{
+			 SmallVector<AttributeSet, 4> Attrs;
+			 AttributeSet PAS;
+			  {
+			   AttrBuilder B;
+			   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+			  }
+			 
+			 Attrs.push_back(PAS);
+			 func___accmut__prepare_call_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+			 
+			}
+			precallfunc->setAttributes(func___accmut__prepare_call_PAL);
+
+			
 			std::vector<Value*> params;
 			std::stringstream ss;
 			ss<<mut_from;
@@ -547,16 +579,103 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			Function *std_handle;
 			if(oricall->getType()->isIntegerTy(32)){
 				std_handle = TheModule->getFunction("__accmut__stdcall_i32");
+
+				if (!std_handle) {
+					 std::vector<Type*>FuncTy_0_args;
+					 FunctionType* FuncTy_0 = FunctionType::get(
+											  /*Result=*/IntegerType::get(TheModule->getContext(), 32),
+											  /*Params=*/FuncTy_0_args,
+											  /*isVarArg=*/false);
+					 std_handle = Function::Create(
+											  /*Type=*/FuncTy_0,
+											  /*Linkage=*/GlobalValue::ExternalLinkage,
+											  /*Name=*/"__accmut__stdcall_i32", TheModule); // (external, no body)
+					 std_handle->setCallingConv(CallingConv::C);
+					 }
+				 AttributeSet func___accmut__stdcall_i32_PAL;
+				 {
+				  SmallVector<AttributeSet, 4> Attrs;
+				  AttributeSet PAS;
+				   {
+					AttrBuilder B;
+					PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+				   }
+				  
+				  Attrs.push_back(PAS);
+				  func___accmut__stdcall_i32_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+				  
+				 }
+				 std_handle->setAttributes(func___accmut__stdcall_i32_PAL);
+
+				
 			}else if(oricall->getType()->isIntegerTy(64)){
 				std_handle = TheModule->getFunction("__accmut__stdcall_i64");
+				if (!std_handle) {
+					 std::vector<Type*>FuncTy_6_args;
+					 FunctionType* FuncTy_6 = FunctionType::get(
+										  /*Result=*/IntegerType::get(TheModule->getContext(), 64),
+										  /*Params=*/FuncTy_6_args,
+										  /*isVarArg=*/false);
+					std_handle = Function::Create(
+								 /*Type=*/FuncTy_6,
+								 /*Linkage=*/GlobalValue::ExternalLinkage,
+								 /*Name=*/"__accmut__stdcall_i64", TheModule); // (external, no body)
+					std_handle->setCallingConv(CallingConv::C);
+				}
+				AttributeSet func___accmut__stdcall_i64_PAL;
+				{
+				 SmallVector<AttributeSet, 4> Attrs;
+				 AttributeSet PAS;
+				  {
+				   AttrBuilder B;
+				   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+				  }
+				 
+				 Attrs.push_back(PAS);
+				 func___accmut__stdcall_i64_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+				 
+				}
+				std_handle->setAttributes(func___accmut__stdcall_i64_PAL);
+
+				
 			}else if(oricall->getType()->isVoidTy()){
 				std_handle = TheModule->getFunction("__accmut__stdcall_void");
+				if (!std_handle) {
+
+					std::vector<Type*>FuncTy_8_args;
+					FunctionType* FuncTy_8 = FunctionType::get(
+					 /*Result=*/Type::getVoidTy(TheModule->getContext()),
+					 /*Params=*/FuncTy_8_args,
+					 /*isVarArg=*/false);
+
+					std_handle = Function::Create(
+					 /*Type=*/FuncTy_8,
+					 /*Linkage=*/GlobalValue::ExternalLinkage,
+					 /*Name=*/"__accmut__stdcall_void", TheModule); // (external, no body)
+					std_handle->setCallingConv(CallingConv::C);
+					}
+					AttributeSet func___accmut__stdcall_void_PAL;
+					{
+					 SmallVector<AttributeSet, 4> Attrs;
+					 AttributeSet PAS;
+					  {
+					   AttrBuilder B;
+					   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+					  }
+					 
+					 Attrs.push_back(PAS);
+					 func___accmut__stdcall_void_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+					 
+					}
+					std_handle->setAttributes(func___accmut__stdcall_void_PAL);
+				
 			}else{
 				ERRMSG("ERR CALL TYPE ");
 				oricall->dump();
 				oricall->getType()->dump();
 				exit(0);
 			}//}else if(oricall->getType()->isPointerTy()){
+
 			
 			CallInst*  stdcall = CallInst::Create(std_handle, "", label_if_else);
 			stdcall->setCallingConv(CallingConv::C);
@@ -594,14 +713,79 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 			Function* prestfunc;
 			if(st->getValueOperand()->getType()->isIntegerTy(32)){
 				prestfunc = TheModule->getFunction("__accmut__prepare_st_i32");
+				if(!prestfunc){
+					PointerType* PointerTy_1 = PointerType::get(IntegerType::get(TheModule->getContext(), 32), 0);
+					std::vector<Type*> FuncTy_4_args;
+					FuncTy_4_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					FuncTy_4_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					FuncTy_4_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					FuncTy_4_args.push_back(PointerTy_1);
+					FunctionType* f_tp = FunctionType::get(IntegerType::get(TheModule->getContext(), 32),
+						FuncTy_4_args, false);
+					prestfunc = Function::Create(f_tp, GlobalValue::ExternalLinkage,
+									"__accmut__prepare_st_i32", TheModule); // (external, no body)
+ 					prestfunc->setCallingConv(CallingConv::C);
+				}
+
+				AttributeSet prestfunc_PAL;
+				{
+					SmallVector<AttributeSet, 4> Attrs;
+					AttributeSet PAS;
+					{
+						AttrBuilder B;
+						PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+					}
+
+					Attrs.push_back(PAS);
+					prestfunc_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+
+				}
+				prestfunc->setAttributes(prestfunc_PAL);				
+				
 			}
 			else if(st->getValueOperand()->getType()->isIntegerTy(64)){
 				prestfunc = TheModule->getFunction("__accmut__prepare_st_i64");
+				if (!prestfunc) {
+
+					PointerType* PointerTy_2 = PointerType::get(IntegerType::get(TheModule->getContext(), 64), 0);
+
+					std::vector<Type*>FuncTy_6_args;
+					FuncTy_6_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					FuncTy_6_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					FuncTy_6_args.push_back(IntegerType::get(TheModule->getContext(), 64));
+					FuncTy_6_args.push_back(PointerTy_2);
+					FunctionType* FuncTy_6 = FunctionType::get(IntegerType::get(TheModule->getContext(), 32),
+					 						FuncTy_6_args, false);
+					
+
+					
+					prestfunc =  Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
+ 								"__accmut__prepare_st_i64", TheModule);
+					prestfunc->setCallingConv(CallingConv::C);
+				}
+
+				AttributeSet pal;
+				{
+				 SmallVector<AttributeSet, 4> Attrs;
+				 AttributeSet PAS;
+				  {
+				   AttrBuilder B;
+				   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+				  }
+				 
+				 Attrs.push_back(PAS);
+				 pal = AttributeSet::get(TheModule->getContext(), Attrs);
+				 
+				}
+				prestfunc->setAttributes(pal);
+
+			
 			}else{
 				ERRMSG("ERR STORE TYPE ");
 				VALERRMSG(cur_it, "CUR_TYPE", st->getValueOperand()->getType());
 				exit(0);
 			}
+
 			
 			std::vector<Value*> params;
 			std::stringstream ss;
@@ -657,6 +841,31 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 
 			//label_if_else
 			Function *std_handle = TheModule->getFunction("__accmut__std_store");
+
+			if (!std_handle) {
+
+				std::vector<Type*> args;
+				FunctionType* ftp = FunctionType::get(Type::getVoidTy(TheModule->getContext()),
+											args,false);
+				std_handle = Function::Create(ftp, GlobalValue::ExternalLinkage, "__accmut__std_store", TheModule); // (external, no body)
+				std_handle->setCallingConv(CallingConv::C);
+			}
+			AttributeSet func___accmut__std_store_PAL;
+			{
+				SmallVector<AttributeSet, 4> Attrs;
+				AttributeSet PAS;
+				{
+				AttrBuilder B;
+				PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+				}
+
+				Attrs.push_back(PAS);
+				func___accmut__std_store_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+
+			}
+			std_handle->setAttributes(func___accmut__std_store_PAL);		
+
+			
 			CallInst*  stdcall = CallInst::Create(std_handle, "", label_if_else);
 			stdcall->setCallingConv(CallingConv::C);
 			stdcall->setTailCall(false);
@@ -676,8 +885,59 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				Function* f_process;
 				if(ori_ty->isIntegerTy(32)){
 					f_process = TheModule->getFunction("__accmut__process_i32_arith");
+
+					if (!f_process) {
+						std::vector<Type*>ftp_args;
+						ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FunctionType* ftp = FunctionType::get(IntegerType::get(TheModule->getContext(), 32), ftp_args, false);						
+						f_process = Function::Create(ftp, GlobalValue::ExternalLinkage,
+						 				"__accmut__process_i32_arith", TheModule); // (external, no body)
+						f_process->setCallingConv(CallingConv::C);
+					}
+					AttributeSet func___accmut__process_i32_arith_PAL;
+					{
+						SmallVector<AttributeSet, 4> Attrs;
+						AttributeSet PAS;
+						{
+						AttrBuilder B;
+						PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+						}
+
+						Attrs.push_back(PAS);
+						func___accmut__process_i32_arith_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+
+					}
+					f_process->setAttributes(func___accmut__process_i32_arith_PAL);
 				}else if(ori_ty->isIntegerTy(64)){
 					f_process = TheModule->getFunction("__accmut__process_i64_arith");
+
+					std::vector<Type*> ftp_args;
+					ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					ftp_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+					ftp_args.push_back(IntegerType::get(TheModule->getContext(), 64));
+					ftp_args.push_back(IntegerType::get(TheModule->getContext(), 64));
+					FunctionType* ftp = FunctionType::get(IntegerType::get(TheModule->getContext(), 64), ftp_args, false);
+					if (!f_process) {
+						f_process = Function::Create(ftp, GlobalValue::ExternalLinkage,"__accmut__process_i64_arith", TheModule);
+						f_process->setCallingConv(CallingConv::C);
+					}
+					AttributeSet pal;
+					{
+					 SmallVector<AttributeSet, 4> Attrs;
+					 AttributeSet PAS;
+					  {
+					   AttrBuilder B;
+					   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+					  }
+					 
+					 Attrs.push_back(PAS);
+					 pal = AttributeSet::get(TheModule->getContext(), Attrs);
+					 
+					}
+					f_process->setAttributes(pal);			
 				}else{
 					ERRMSG("ArithInst TYPE ERROR ");
 					cur_it->dump();
@@ -708,8 +968,77 @@ void DMAInstrumenter::instrument(Function &F, vector<Mutation*> * v){
 				
 				if(cur_it->getOperand(0)->getType()->isIntegerTy(32)){
 					f_process = TheModule->getFunction("__accmut__process_i32_cmp");
+
+					if (!f_process) {
+						
+						std::vector<Type*>FuncTy_3_args;
+						FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FuncTy_3_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FunctionType* FuncTy_3 = FunctionType::get(
+						 /*Result=*/IntegerType::get(TheModule->getContext(), 32),
+						 /*Params=*/FuncTy_3_args,
+						 /*isVarArg=*/false);
+						
+						f_process = Function::Create(
+						 /*Type=*/FuncTy_3,
+						 /*Linkage=*/GlobalValue::ExternalLinkage,
+						 /*Name=*/"__accmut__process_i32_cmp", TheModule); // (external, no body)
+						f_process->setCallingConv(CallingConv::C);
+					}
+					AttributeSet func___accmut__process_i32_cmp_PAL;
+					{
+					 SmallVector<AttributeSet, 4> Attrs;
+					 AttributeSet PAS;
+					  {
+					   AttrBuilder B;
+					   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+					  }
+					 
+					 Attrs.push_back(PAS);
+					 func___accmut__process_i32_cmp_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+					 
+					}
+					f_process->setAttributes(func___accmut__process_i32_cmp_PAL);
+					
 				}else if(cur_it->getOperand(0)->getType()->isIntegerTy(64)){
 					f_process = TheModule->getFunction("__accmut__process_i64_cmp");
+
+					if (!f_process) {
+
+						std::vector<Type*>FuncTy_5_args;
+						FuncTy_5_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FuncTy_5_args.push_back(IntegerType::get(TheModule->getContext(), 32));
+						FuncTy_5_args.push_back(IntegerType::get(TheModule->getContext(), 64));
+						FuncTy_5_args.push_back(IntegerType::get(TheModule->getContext(), 64));
+						FunctionType* FuncTy_5 = FunctionType::get(
+						 /*Result=*/IntegerType::get(TheModule->getContext(), 32),
+						 /*Params=*/FuncTy_5_args,
+						 /*isVarArg=*/false);
+
+						
+						f_process = Function::Create(
+						 /*Type=*/FuncTy_5,
+						 /*Linkage=*/GlobalValue::ExternalLinkage,
+						 /*Name=*/"__accmut__process_i64_cmp", TheModule); // (external, no body)
+						f_process->setCallingConv(CallingConv::C);
+					}
+					AttributeSet func___accmut__process_i64_cmp_PAL;
+					{
+					 SmallVector<AttributeSet, 4> Attrs;
+					 AttributeSet PAS;
+					  {
+					   AttrBuilder B;
+					   PAS = AttributeSet::get(TheModule->getContext(), ~0U, B);
+					  }
+					 
+					 Attrs.push_back(PAS);
+					 func___accmut__process_i64_cmp_PAL = AttributeSet::get(TheModule->getContext(), Attrs);
+					 
+					}
+					f_process->setAttributes(func___accmut__process_i64_cmp_PAL);
+					
 				}else{
 					ERRMSG("ICMP TYPE ERROR ");	
 					exit(0);
