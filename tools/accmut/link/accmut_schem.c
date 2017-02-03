@@ -128,6 +128,14 @@ void __accmut__init(){
 				TOTALFORK++;
 				int pr = waitpid(pid, NULL, 0);
 
+				struct itimerval MAIN_REAL_TICK, MAIN_PROF_TICK;
+            	MAIN_REAL_TICK.it_value.tv_sec = 0;  // sec
+            	MAIN_REAL_TICK.it_value.tv_usec = 100000; // u sec.
+            	MAIN_PROF_TICK.it_value.tv_sec = 0;  // sec
+            	MAIN_PROF_TICK.it_value.tv_usec = 100000; // u sec.
+            	int r1 = setitimer(ITIMER_REAL, &MAIN_REAL_TICK, NULL); 
+            	int r2 = setitimer(ITIMER_PROF, &MAIN_PROF_TICK, NULL); 
+
 				if(pr < 0){
 					ERRMSG("waitpid ERR ");
 					exit(ENV_ERR);

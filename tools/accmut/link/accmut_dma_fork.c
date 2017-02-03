@@ -31,14 +31,17 @@ extern int TEST_ID;
 extern Mutation* ALLMUTS[MAXMUTNUM + 1];
 
 
-#define fprintf __real_fprintf
+//#define fprintf __real_fprintf
+#define __real_fprintf fprintf
+
 
 #define MMPL 64 //MAX MUT NUM PER LOCATION 
 
 /****** switch on for divide eq cls *******/
-#define DIV_EQ_CMP 1
-#define DIV_EQ_CL_ST 1
-#define USING_DIVIDE 1
+#define USING_DIVIDE 0
+
+#define DIV_EQ_CMP USING_DIVIDE
+#define DIV_EQ_CL_ST USING_DIVIDE
 
 
 static int forked_active_set[MMPL]; 
@@ -254,6 +257,10 @@ long __accmut__fork__eqclass(int from, int to) {
 
          int pid = 0;
 
+    #if 1
+         fprintf(stderr, "#\n");
+    #endif
+
          pid = fork();
 
          if(pid < 0){
@@ -295,6 +302,15 @@ long __accmut__fork__eqclass(int from, int to) {
          } else {
 
             int pr = waitpid(pid, NULL, 0);
+
+            struct itimerval MAIN_REAL_TICK, MAIN_PROF_TICK;
+            MAIN_REAL_TICK.it_value.tv_sec = 0;  // sec
+            MAIN_REAL_TICK.it_value.tv_usec = 100000; // u sec.
+            MAIN_PROF_TICK.it_value.tv_sec = 0;  // sec
+            MAIN_PROF_TICK.it_value.tv_usec = 100000; // u sec.
+            int r1 = setitimer(ITIMER_REAL, &MAIN_REAL_TICK, NULL); 
+            int r2 = setitimer(ITIMER_PROF, &MAIN_PROF_TICK, NULL); 
+
             if(pr < 0){
                 ERRMSG("waitpid ERR ");
                 exit(ENV_ERR);
@@ -344,7 +360,9 @@ void __accmut__init(){
     
     __accmut__set_sig_handlers();
 
+    #if 0
     __accmut__init_stdstream();
+    #endif
 
     if(TEST_ID < 0){
         ERRMSG("TEST_ID NOT INIT");

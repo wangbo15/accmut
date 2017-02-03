@@ -154,7 +154,7 @@ static void __accmut__omitdump__handler(int sig){
 
 #if 1
 	_exit(exitcd);
-	// kill(getpid(), SIGKILL);
+	kill(getpid(), SIGKILL);
 #else
     signal(SIGABRT, SIG_DFL);
 #endif
@@ -177,13 +177,18 @@ static void __accmut__timeout_handler(int sig){
 	write(fd, msg, __accmut__strlen(msg));
 	#endif
 
-#if 0
-    // _exit(TIMEOUT_ERR);
+#define VIM 1
+#if VIM
+	//system("rm .*.swp");
+#endif
+
+#if 1
+    _exit(TIMEOUT_ERR);
     kill(getpid(), SIGKILL);
 #else
     exit(TIMEOUT_ERR);
 #endif
-    
+
 }
 
 void __accmut__set_sig_handlers(){

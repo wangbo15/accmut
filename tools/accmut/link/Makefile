@@ -15,8 +15,8 @@ SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_st
 
 EVAL_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_sma_eval.o
 
-DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_dma_fork.o
-
+#DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_dma_fork.o
+DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_dma_fork.o
 
 sche_ar: libamsche.a
 
