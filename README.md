@@ -1,13 +1,19 @@
-﻿# AccMut
+# AccMut
 AccMut is a framework of mutation testing for C programs built on the top of the Low Level Virtual Machine (LLVM) version 3.8. AccMut generates mutants on LLVM IR level and integrates some acclerating techniques, such as mutation schemata, split-stream execution and dynamic mutation analysis.
 
 ##Overview
 AccMut contains three main components: Mutation Generator, Mutation Instrumenter and Runtime Library. AccMut processes mutation analysis by the following steps.
-* Compile the source code of the program into LLVM IR. Mutation Generator generates mutants of the LLVM IR code.
-* Mutation Instrumenter instrument mutants into the IR code of the program using mutation schemata. Then compile the IR code into object files.
+* Compile the source code of the program into LLVM IR. Mutation Generator scans the IR code and generates the description file file of mutants on the LLVM IR code. Note that we can modify the description file to sample the mutants.
+* Mutation Instrumenter instrument mutants into the IR code of the program using mutation schemata, according to the description file. Then compile the IR code into object files.
 * LLVM links the object files with Runtime Library and obtains an executable file of the program.
-* The executable file executes each test on all mutants. When IO operations are involved, Runtime Library ensures that the operations performed by different processes would not interfere with each other based on the copy-on-write mechanism.
+* The executable file executes each test on all mutants.
 
+##Directory Layout
+AccMut is based on the project LLVM. 
+
+Mutation Generator and  Mutation Instrumenter are implemented in LLVM passes, located in the path `accmut/include/llvm/Transforms/AccMut/` and `accmut/lib/Transforms/AccMut/`. 
+
+Runtime Library has two ways of implementation. For the simple projects, we can use the header files to provide the definations of the instrumented functions. For the large projects, we can provide the static link library. Both of them are located in `accmut/tools/accmut/`.
 
 ## Compile AccMut
 
@@ -28,10 +34,12 @@ Note that currently AccMut can only be built on a 64-bit linux system. We have c
 
 ## Generate the mutation description file.
 Before the complation, make sure the switch-on `ACCMUT_GEN_MUT` in `accmut/include/llvm/Transforms/AccMut/Config.h` should be 1, and other switch-ons should be 0. After compiling it, we can get a runable *clang* for mutation generation. It is better to save the mutation generator in some other place, for we will re-complie AccMut for instrumentation. 
-Use the *clang* to compile the program being tested. The mutation description file will be generated in the path *$HOME/tmp/accmut/mutations.txt*. Please make sure the directory has already existed. This file contains all mutations generated. Each line represents a LLVM-IR level mutation. 
+Use the *clang* to compile the program being tested. The mutation description file will be generated in the path `$HOME/tmp/accmut/mutations.txt`. Please make sure the directory has already existed. This file contains all mutations generated. Each line represents a LLVM-IR level mutation. 
 
 The mutation file `mutations.txt` follows the rules below:
 `MUT_OPERATOR:FUNCTION:INDEX:ORIGINAL_OPERATION_CODE:[MUT_ACTTION | MUT_OPREAND]*`
+
+We can also sample the mutants by modifying this text file.
 
 As we mutate on the LLVM IR level, each IR instruction corresponds to a location. We apply a set of mutation operators on IR
 instructions to produce mutants.
@@ -57,9 +65,45 @@ AccMut supports the opeartors as below:
 ## Instrument the mutants into the C program.
 Note that the current *clang* of AccMut should be built under the configuration  `ACCMUT_DYNAMIC_ANALYSIS_INSTRUEMENT` in `accmut/include/llvm/Transforms/AccMut/Config.h` is 1 and others are 0.
 
-###Imlementation for instrumentation
+###Imlementation for Mutation Instrumenter
+Mutation Instrumenter modifies the IR according to the description file. According to the type of an IR instruction,
+Mutation Instrumenter has different instrument strategies. For the arithmetic-based IRs, Mutation Instrumenter just
+replace the IR instruction with corresponding process function. For `store` and `call`, Mutation Instrumenter
+adds process functions before the mutated location and modifies the control flow to perform skipping the location.
 
-####For arithmetic instructions
+####Illustrating example
+We are given a fragment C code :
+>a=b-foo(c,d)
+
+All the variables are int.
+Note that LLVM IR is a three-address, SSA form code, so the source IRs contain two locations and the pseudo code shows below.
+>int res = foo(c,d)     //LOCATION 0
+a = b-res	             //LOCATION 1
+
+Assuming we have three mutants on the two locations, an AOR
+(`a=b+res`) at location 1, an ROV (`res=foo(d,c)`) at
+location 0, and an STDC (`res=UNINIT`),
+Mutation Instrumenter modifies the IRs as below.
+
+>//int prepare_call(int location_id,int number_and_tpyes_of_paras, ...);
+int IS_STDC = prepare_call(0, FLAG, &c, &d)
+int res;
+if(! IS_STDC){
+  res = foo(c,d)
+}
+//int process_arith(int loc_id,int left,int right);
+a = process_arith(1, b, res)
+
+For the call instruction, Mutation Instrumenter adds a process function before and passes the pointers of `c` and `d` to perform switching their values as the ROV(Line 2) and adds control flow to skip the call as the STDC (Line 3 o 6). Note that `prepare_call` is a variable parameter function, so it can handle functions with different parameter numbers. LLVM IR is well typed, we can get the number and the types of the parameters statically and generate a bit vector `FLAG` to encapsulate the information.
+
+For the arithmetic instruction, Mutation Instrumenter directly replaces it with the corresponding process function, passing the original operands(Line 8). 
+
+Moreover, in Mutation Instrumenter, `store` can be treated as a special condition of `call`, that is, a function with two parameters, a value and a printer.
+
+For the ROV, the `prepare_call` will check whether `c` equals to `d` by dereferencing their pointers. If `c` equals to `d`, the mutant is equivalence modulo the current state, otherwise AccMut will conservatively consider the states are not equivalent and will fork a process, then switch the values of `c` and `d` utilizing the pointers.
+For the STDC, `prepare_call` treats it as mutant can not be tried and directly fork a new process and return 1 to `IS_STDC`, so that the control flow can skip the call.
+
+####Details for arithmetic instructions
 Arithmetic mutants are based on the LLVM-IRs whose result can be directly computed, such as arithmetic instructions and icmp instructions. We can apply AOR, LOR, ROR, LVR, COR, SOR, UOI, ROV, ABV on these LLVM-IRs. 
 
 AccMut directly replace the mutated location to our process function. For example,
@@ -67,7 +111,7 @@ AccMut directly replace the mutated location to our process function. For exampl
     
 And `%cmp = icmp ne i32 %3, %4` will be transformed into `%cmp = call i32 @__accmut__process_i32_cmp(i32 MUT_BEGIN_ID, i32 MUT_END_ID, i32 %3, i32 %4)`. We can pre-compute all the results of the mutants in the process functions.
 
-####For side-effects instructions
+####Details for side-effects instructions
 Some LLVM-IRs cannot be directly computed their results, and they may have side-effects, such as store and call instructions. We can apply STDC, STDS, UOI, ROV, ABV on these IRs. It is much complex to handle them.
 
 For example, a method invocation:
