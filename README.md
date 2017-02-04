@@ -77,15 +77,16 @@ We are given a fragment C code :
 
 All the variables are int.
 Note that LLVM IR is a three-address, SSA form code, so the source IRs contain two locations and the pseudo code shows below.
->int res = foo(c,d)     //LOCATION 0
+```
+int res = foo(c,d)     //LOCATION 0
 a = b-res	             //LOCATION 1
-
+```
 Assuming we have three mutants on the two locations, an AOR
 (`a=b+res`) at location 1, an ROV (`res=foo(d,c)`) at
 location 0, and an STDC (`res=UNINIT`),
 Mutation Instrumenter modifies the IRs as below.
-
->//int prepare_call(int location_id,int number_and_tpyes_of_paras, ...);
+```
+//int prepare_call(int location_id,int number_and_tpyes_of_paras, ...);
 int IS_STDC = prepare_call(0, FLAG, &c, &d)
 int res;
 if(! IS_STDC){
@@ -93,7 +94,7 @@ if(! IS_STDC){
 }
 //int process_arith(int loc_id,int left,int right);
 a = process_arith(1, b, res)
-
+```
 For the call instruction, Mutation Instrumenter adds a process function before and passes the pointers of `c` and `d` to perform switching their values as the ROV(Line 2) and adds control flow to skip the call as the STDC (Line 3 o 6). Note that `prepare_call` is a variable parameter function, so it can handle functions with different parameter numbers. LLVM IR is well typed, we can get the number and the types of the parameters statically and generate a bit vector `FLAG` to encapsulate the information.
 
 For the arithmetic instruction, Mutation Instrumenter directly replaces it with the corresponding process function, passing the original operands(Line 8). 
