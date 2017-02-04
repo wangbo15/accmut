@@ -73,8 +73,9 @@ adds process functions before the mutated location and modifies the control flow
 
 ####Illustrating example
 We are given a fragment C code :
->a=b-foo(c,d)
-
+```
+a=b-foo(c,d)
+```
 All the variables are int.
 Note that LLVM IR is a three-address, SSA form code, so the source IRs contain two locations and the pseudo code shows below.
 ```
