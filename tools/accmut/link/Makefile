@@ -2,34 +2,26 @@
 #CC = gcc
 CC = $(accmut)/build/Release+Asserts/bin/clang
 
-CFLAFS = -Wall
+CFLAFS =
 #CFLAGS = -Wall -g
 #WRAP_FLAGS = -fno-builtin-fprintf -Wl,--wrap=fprintf -Wl,--wrap=fopen
 
-DEFI = -D ACCMUT_STATIC_ANALYSIS_EVAL
-
-
-
-#SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_schem.o
 SCHEMATA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_schem.o
 
-EVAL_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_sma_eval.o
+SSE_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_dma_fork.o
 
-#DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_io.o accmut_dma_fork.o
 DMA_AR_OBJ = accmut_config.o accmut_arith_common.o accmut_async_sig_safe_string.o accmut_dma_fork.o
 
-sche_ar: libamsche.a
-
-eval: libameval.a
-
-dma: libamdma.a
-
+libamsche.a: CLFAGS = -D ACCMUT_MUTATION_SCHEMATA
 libamsche.a: $(SCHEMATA_AR_OBJ)
 	ar -rcs $@ $^
 
-libameval.a: $(EVAL_AR_OBJ)
+
+libamsse.a: $(SSE_AR_OBJ)
 	ar -rcs $@ $^
 
+##
+libamdma.a: CFLAFS = -D USING_DIVIDE
 libamdma.a: $(DMA_AR_OBJ)
 	ar -rcs $@ $^
 
@@ -53,10 +45,10 @@ accmut_sma_eval.o: accmut_sma_eval.c accmut_process.h accmut_io.h accmut_exitcod
 
 accmut_dma_fork.o: 	accmut_dma_fork.c accmut_process.h accmut_io.h accmut_exitcode.h
 	$(CC) $(CFLAGS) -c $<
-		
-		
-.PHONY: clean sche_ar
+
+
+.PHONY: clean
 clean:
-	rm -f *.o
-	rm -f *.a
-	rm -f *.so
+	-rm -f *.o
+	-rm -f *.a
+	-rm -f *.so

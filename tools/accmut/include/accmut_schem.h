@@ -84,6 +84,10 @@ void __accmut__init(){
 
 		if(MUTATION_ID == 0 && (MUTS_ON[i] == 1) ){
 		
+		    #if COUNT_FORK_NUM
+		         fprintf(stderr, "#\n");
+		    #endif
+		
 			//fprintf(stderr, "FORK MUT: %d\n", i);
 			pid_t pid = fork();
 			
@@ -131,7 +135,7 @@ void __accmut__init(){
 
 	free(MUTS_ON);
 
-#if 1
+#if 0
 	if(MUTATION_ID == 0){
 		fprintf(stdout, "TOTALFORK : %d\n",	TOTALFORK);
 	}

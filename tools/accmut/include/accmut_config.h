@@ -19,7 +19,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-
+/*
 #define ACCMUT_ORI_TEST 0
 //SWITCH FOR MUTATION SCHEMATA
 #define ACCMUT_MUTATION_SCHEMATA 0
@@ -29,7 +29,8 @@
 #define ACCMUT_STATIC_ANALYSIS_FORK_CALL 0
 
 //SWITCH FOR DYNAMIC ANALYSIS
-#define ACCMUT_DYNAMIC_ANALYSIS_FORK 1
+#define ACCMUT_DYNAMIC_ANALYSIS_FORK 0
+*/
 
 //for DMA FORK
 #define MAXMUTNUM 65536
@@ -108,7 +109,11 @@ typedef struct PrepareCallParam{
 void __accmut__exit_check_output();
 
 
+#define NEED_TIME_RES 0
+
 void __accmut__exit_time(){
+
+#if NEED_TIME_RES
 
 #if 1
 	if(MUTATION_ID != 0){
@@ -161,6 +166,8 @@ void __accmut__exit_time(){
 	__accmut__filedump(accmut_stdout);
 	__accmut__filedump(accmut_stderr);
 	#endif
+
+#endif //NEED_TIME_RES
 }
 
 #define ACCMUT_MUTE 0
@@ -320,12 +327,13 @@ void __accmut__sepcific_timer(){
     ACCMUT_REAL_TICK.it_interval.tv_sec = INTTERVAL_SEC * REAL_TIMES;
     ACCMUT_REAL_TICK.it_interval.tv_usec =  INTTERVAL_USEC * REAL_TIMES;
 
+    #if 0
     fprintf(stdout, "PROFTIMER: %ld %ld ; REALTIMER: %ld %ld\n", 
     				ACCMUT_PROF_TICK.it_value.tv_sec ,
     				ACCMUT_PROF_TICK.it_value.tv_usec, 
     				ACCMUT_REAL_TICK.it_value.tv_sec , 
     				ACCMUT_REAL_TICK.it_value.tv_usec);
-
+	#endif
 }
 
 #undef INTTERVAL_SEC

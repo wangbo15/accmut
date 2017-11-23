@@ -38,7 +38,9 @@ extern Mutation* ALLMUTS[MAXMUTNUM + 1];
 #define MMPL 64 //MAX MUT NUM PER LOCATION 
 
 /****** switch on for divide eq cls *******/
+//#ifndef USING_DIVIDE
 #define USING_DIVIDE 0
+//#endif
 
 #define DIV_EQ_CMP USING_DIVIDE
 #define DIV_EQ_CL_ST USING_DIVIDE

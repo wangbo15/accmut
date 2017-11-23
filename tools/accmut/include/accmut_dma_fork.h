@@ -78,7 +78,7 @@ void __accmut__dump_eqclass(){
     }
 }
 
-#define USING_DIVIDE 0
+//#define USING_DIVIDE 0
 
 void __accmut__divide__eqclass() {
     eq_num = 0;
@@ -246,7 +246,9 @@ long __accmut__fork__eqclass(int from, int to) {
 
          int pid = 0;
 
-    #if 1
+
+    //#define COUNT_FORK_NUM 0
+    #if COUNT_FORK_NUM
          fprintf(stderr, "#\n");
     #endif
 

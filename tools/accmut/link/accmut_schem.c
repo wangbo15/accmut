@@ -91,7 +91,8 @@ void __accmut__init(){
 
 		if(MUTATION_ID == 0 && (MUTS_ON[i] == 1) ){
 		
-			// fprintf(stderr, "FORK MUT: %d\n", i);
+			fprintf(stderr, "#\n");
+			
 			pid_t pid = fork();
 			
 			if(pid < 0){
