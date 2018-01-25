@@ -140,6 +140,12 @@ if.else:                                          ; preds = %for.body
 ```
 AccMut pass the pointers of the parameters to the function `__accmut__prepare_call`, in which we can judge the mutants' types and apply them. For example, we can exange the pointees' value of the 2 pointers to implement an ROV mutant. And if the current mutant is STDC, `__accmut__prepare_call` will fork a new process then directly return 0. The new process will go into the `if.else` branch, in which there is just a dummy function call. By this way, we can handle mutants on `call` and `store`.
 
+##Publication
+*Faster mutation analysis via equivalence modulo states*
+    Bo Wang, Yingfei Xiong, Yangqingwei Shi, Lu Zhang and Dan Hao,     ISSTA 2017. [[download]][issta17].
+    
+[issta17]: http://sei.pku.edu.cn/~xiongyf04/papers/ISSTA17.pdf
+
 
 ## Acknowledgements
 Thanks for the excellent project LLVM. Our code follows the GPL license. 
