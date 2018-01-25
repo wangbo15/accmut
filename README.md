@@ -51,10 +51,10 @@ AccMut supports the opeartors as below:
 |Name         | Description           | Example  |
 | :-------------: |:-------------:| :-----:|
 |AOR    |  Replace arithmetic operator | `a + b` -> `a − b` |
-| LOR | Replace logic operator          | `a & b` -> `a | b`  |
+| LOR | Replace logic operator          | `a & b` -> `a \| b`  |
 | ROR | Replace relational operator     | `a == b` -> `a >= b`       |
 | LVR | Replace literal value           | T -> T+1, T -> 0, T -> 1  |
-| COR | Replace bit operator            | `a && b` -> `a || b`       |
+| COR | Replace bit operator            | `a && b` -> `a \|\| b`       |
 | SOR | Replace shift operator          | `a >> b` -> `a << b`       |
 | STDC | Delete a call                  | `foo()` -> nop          |
 | STDS | Delete a store                 | `a = 5` -> nop          |
@@ -140,9 +140,9 @@ if.else:                                          ; preds = %for.body
 ```
 AccMut pass the pointers of the parameters to the function `__accmut__prepare_call`, in which we can judge the mutants' types and apply them. For example, we can exange the pointees' value of the 2 pointers to implement an ROV mutant. And if the current mutant is STDC, `__accmut__prepare_call` will fork a new process then directly return 0. The new process will go into the `if.else` branch, in which there is just a dummy function call. By this way, we can handle mutants on `call` and `store`.
 
-##Publication
-*Faster mutation analysis via equivalence modulo states*
-    Bo Wang, Yingfei Xiong, Yangqingwei Shi, Lu Zhang and Dan Hao,     ISSTA 2017. [[download]][issta17].
+## Publication
+*Faster mutation analysis via equivalence modulo states*. 
+Bo Wang, Yingfei Xiong, Yangqingwei Shi, Lu Zhang and Dan Hao,     ISSTA 2017. [[download]][issta17].
     
 [issta17]: http://sei.pku.edu.cn/~xiongyf04/papers/ISSTA17.pdf
 
